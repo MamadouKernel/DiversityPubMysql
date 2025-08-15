@@ -30,9 +30,10 @@ COPY --from=publish /app/publish .
 
 # Variables d'environnement pour Railway
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 
-# Exposer le port (Railway utilisera sa propre variable PORT)
+# Exposer le port
 EXPOSE 8080
 
-# Commande de démarrage
+# Commande de démarrage avec logs
 ENTRYPOINT ["dotnet", "DiversityPub.dll"]

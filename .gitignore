@@ -375,6 +375,7 @@ FodyWeavers.xsd
 .env.test.local
 .env.production.local
 appsettings.Production.json
+appsettings.Railway.json
 
 # Logs
 logs

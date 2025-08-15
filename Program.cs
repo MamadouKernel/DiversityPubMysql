@@ -6,6 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Logging au démarrage
+Console.WriteLine("🚀 Démarrage de l'application DiversityPub...");
+Console.WriteLine($"🔧 Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"🌐 URLs configurées: {builder.Configuration["ASPNETCORE_URLS"]}");
+
 // Add services to the container.
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options =>
@@ -17,9 +22,23 @@ builder.Services.AddControllersWithViews()
 // Ajouter SignalR
 builder.Services.AddSignalR();
 
-builder.Services.AddDbContext<DiversityPubDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), 
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
+// Configuration de la base de données avec gestion d'erreur
+try
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    Console.WriteLine($"🔗 Connection string: {connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0))}...");
+    
+    builder.Services.AddDbContext<DiversityPubDbContext>(options =>
+        options.UseMySql(connectionString, 
+            ServerVersion.AutoDetect(connectionString)));
+    
+    Console.WriteLine("✅ DbContext configuré avec succès");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Erreur lors de la configuration de la base de données: {ex.Message}");
+    throw;
+}
 
 // Enregistrer les services hébergés
 builder.Services.AddHostedService<CampagneExpirationService>();
@@ -36,20 +55,21 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
         options.AccessDeniedPath = "/Auth/AccessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromHours(1); // Session de 8 heures
-        options.SlidingExpiration = true; // Renouvellement automatique
-        options.Cookie.HttpOnly = true; // Sécurité
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // HTTPS en production
-        options.Cookie.SameSite = SameSiteMode.Lax; // Compatibilité cross-site
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
 
 var app = builder.Build();
+
+Console.WriteLine("🏗️ Configuration du pipeline HTTP...");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -67,6 +87,27 @@ app.MapControllerRoute(
 
 // Mapper le hub SignalR
 app.MapHub<DiversityPub.Hubs.NotificationHub>("/notificationHub");
+
+// Endpoint de healthcheck simple
+app.MapGet("/health", () => 
+{
+    Console.WriteLine("🏥 Healthcheck appelé");
+    return "OK";
+});
+
+// Endpoint de test de base de données
+app.MapGet("/db-test", async (DiversityPubDbContext context) =>
+{
+    try
+    {
+        var canConnect = await context.Database.CanConnectAsync();
+        return canConnect ? "Database OK" : "Database connection failed";
+    }
+    catch (Exception ex)
+    {
+        return $"Database error: {ex.Message}";
+    }
+});
 
 // Appliquer les migrations automatiquement en production
 if (app.Environment.IsProduction())
@@ -86,13 +127,10 @@ if (app.Environment.IsProduction())
             Console.WriteLine($"📋 Stack trace: {ex.StackTrace}");
             
             // En production, on continue même si les migrations échouent
-            // pour éviter que l'application ne démarre pas du tout
             Console.WriteLine("⚠️ L'application continue sans les migrations...");
         }
     }
 }
 
-// Ajouter un endpoint de healthcheck simple
-app.MapGet("/health", () => "OK");
-
+Console.WriteLine("🎉 Application configurée, démarrage...");
 app.Run();
