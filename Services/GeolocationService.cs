@@ -41,7 +41,7 @@ namespace DiversityPub.Services
                 foreach (var agent in agentsTerrain)
                 {
                     // Simuler une position GPS (en production, vous utiliseriez une vraie API GPS)
-                    var position = await GetAgentPosition(agent);
+                    var position = GetAgentPosition(agent).Result;
                     
                     if (position != null)
                     {
@@ -68,7 +68,7 @@ namespace DiversityPub.Services
             }
         }
 
-        private async Task<PositionGPS?> GetAgentPosition(AgentTerrain agent)
+        private Task<PositionGPS?> GetAgentPosition(AgentTerrain agent)
         {
             // En production, cette méthode devrait récupérer la vraie position GPS
             // depuis l'appareil de l'agent ou une API de localisation

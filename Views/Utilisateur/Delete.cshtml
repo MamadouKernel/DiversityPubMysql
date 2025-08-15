@@ -27,30 +27,33 @@
                         <div class="col-md-6">
                             <dl class="row">
                                 <dt class="col-sm-4">Nom complet</dt>
-                                <dd class="col-sm-8">@Model.NomComplet</dd>
+                                <dd class="col-sm-8">@($"{Model.Nom} {Model.Prenom}")</dd>
 
                                 <dt class="col-sm-4">Email</dt>
                                 <dd class="col-sm-8">@Model.Email</dd>
 
-                                <dt class="col-sm-4">Téléphone</dt>
-                                <dd class="col-sm-8">@Model.Telephone</dd>
+                                <dt class="col-sm-4">Nom</dt>
+                                <dd class="col-sm-8">@Model.Nom</dd>
+
+                                <dt class="col-sm-4">Prénom</dt>
+                                <dd class="col-sm-8">@Model.Prenom</dd>
 
                                 <dt class="col-sm-4">Rôle</dt>
                                 <dd class="col-sm-8">
-                                    <span class="badge badge-@(Model.Role == "Admin" ? "danger" : Model.Role == "Agent" ? "warning" : "info")">
+                                    <span class="badge badge-@(Model.Role == DiversityPub.Models.enums.Role.Admin ? "danger" : Model.Role == DiversityPub.Models.enums.Role.AgentTerrain ? "warning" : "info")">
                                         @Model.Role
                                     </span>
                                 </dd>
 
                                 <dt class="col-sm-4">Statut</dt>
                                 <dd class="col-sm-8">
-                                    <span class="badge badge-@(Model.Statut == "Actif" ? "success" : "secondary")">
-                                        @Model.Statut
+                                    <span class="badge badge-@(Model.Supprimer == 0 ? "success" : "secondary")">
+                                        @(Model.Supprimer == 0 ? "Actif" : "Supprimé")
                                     </span>
                                 </dd>
 
-                                <dt class="col-sm-4">Date de création</dt>
-                                <dd class="col-sm-8">@Model.DateCreation.ToString("dd/MM/yyyy HH:mm")</dd>
+                                <dt class="col-sm-4">ID</dt>
+                                <dd class="col-sm-8">@Model.Id</dd>
                             </dl>
                         </div>
                     </div>

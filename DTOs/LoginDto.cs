@@ -1,4 +1,4 @@
-﻿namespace flotteEngin.Dtos
+﻿namespace DiversityPub.DTOs
 {
     public class LoginDto
     {

@@ -90,15 +90,15 @@ namespace DiversityPub.Controllers
                 // Récupérer les agents terrain avec leurs compétences
                 var agentsTerrain = await _context.AgentsTerrain
                     .Include(at => at.Utilisateur)
-                    .OrderBy(at => at.Utilisateur.Nom)
-                    .ThenBy(at => at.Utilisateur.Prenom)
+                    .OrderBy(at => at.Utilisateur.Nom ?? "")
+                    .ThenBy(at => at.Utilisateur.Prenom ?? "")
                     .ToListAsync();
 
                 // Récupérer les responsables (agents terrain qui peuvent être responsables)
                 var responsables = await _context.AgentsTerrain
                     .Include(at => at.Utilisateur)
-                    .OrderBy(at => at.Utilisateur.Nom)
-                    .ThenBy(at => at.Utilisateur.Prenom)
+                    .OrderBy(at => at.Utilisateur.Nom ?? "")
+                    .ThenBy(at => at.Utilisateur.Prenom ?? "")
                     .ToListAsync();
 
                 // Récupérer les activations existantes pour validation des conflits

@@ -1,11 +1,12 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using DiversityPub.Data;
+using DiversityPub.DTOs;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace flotteEngin.Controllers
+namespace DiversityPub.Controllers
 {
     public class AccessController: Controller
     {
@@ -20,7 +21,7 @@ namespace flotteEngin.Controllers
         {
             ClaimsPrincipal claimUser = HttpContext.User;
 
-            if (claimUser.Identity.IsAuthenticated)
+            if (claimUser.Identity?.IsAuthenticated == true)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -28,7 +29,7 @@ namespace flotteEngin.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(Dtos.LoginDto loginDto)
+        public async Task<IActionResult> Login(LoginDto loginDto)
         {
             if (!ModelState.IsValid)
             {
@@ -52,12 +53,11 @@ namespace flotteEngin.Controllers
                 {
                     List<Claim> claims = new List<Claim>
                     {
-                        new Claim("Id", utilisateur?.Id.ToString()),
-                        new Claim(ClaimTypes.NameIdentifier, utilisateur.Nom),
-                        new Claim("Prenoms", utilisateur.Prenom),
+                        new Claim("Id", utilisateur.Id.ToString()),
+                        new Claim(ClaimTypes.NameIdentifier, utilisateur.Nom ?? ""),
+                        new Claim("Prenoms", utilisateur.Prenom ?? ""),
                         new Claim(ClaimTypes.Role, utilisateur.Role.ToString()),
-                        new Claim(ClaimTypes.Email, utilisateur.Email),
-
+                        new Claim(ClaimTypes.Email, utilisateur.Email ?? ""),
                     };
 
                     // Création de l'identité et des propriétés d'authentification
@@ -84,7 +84,6 @@ namespace flotteEngin.Controllers
             // Message d'avertissement si le matricule est incorrect
             ViewData["Messagedevalidation"] = "Matricule ou Mot de passe incorrect";
             return View(loginDto); // Retourne les informations pour une meilleure UX
-
         }
 
         private string HashPassword(string password)
@@ -98,7 +97,5 @@ namespace flotteEngin.Controllers
         {
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
-
     }
-
 }
