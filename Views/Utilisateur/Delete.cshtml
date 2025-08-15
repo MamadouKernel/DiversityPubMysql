@@ -1,0 +1,89 @@
+@model DiversityPub.Models.Utilisateur
+
+@{
+    ViewData["Title"] = "Supprimer l'utilisateur";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-times text-danger"></i>
+                        @ViewData["Title"]
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h4 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Attention !
+                        </h4>
+                        <p>Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Nom complet</dt>
+                                <dd class="col-sm-8">@Model.NomComplet</dd>
+
+                                <dt class="col-sm-4">Email</dt>
+                                <dd class="col-sm-8">@Model.Email</dd>
+
+                                <dt class="col-sm-4">Téléphone</dt>
+                                <dd class="col-sm-8">@Model.Telephone</dd>
+
+                                <dt class="col-sm-4">Rôle</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-@(Model.Role == "Admin" ? "danger" : Model.Role == "Agent" ? "warning" : "info")">
+                                        @Model.Role
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Statut</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-@(Model.Statut == "Actif" ? "success" : "secondary")">
+                                        @Model.Statut
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Date de création</dt>
+                                <dd class="col-sm-8">@Model.DateCreation.ToString("dd/MM/yyyy HH:mm")</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i>
+                                Confirmer la suppression
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Confirmation supplémentaire
+            $('form').on('submit', function(e) {
+                if (!confirm('Êtes-vous absolument sûr de vouloir supprimer cet utilisateur ?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+}
