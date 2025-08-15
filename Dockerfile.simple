@@ -1,17 +1,18 @@
-# Version simplifiée pour Railway avec Nixpacks
+# Image de base .NET 8
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
+# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers publiés (sera fait par Railway)
+# Copier les fichiers publiés
 COPY . .
 
 # Variables d'environnement
-ENV ASPNETCORE_URLS=http://0.0.0.0:$PORT
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 
-# Exposer le port dynamique
-EXPOSE $PORT
+# Exposer le port
+EXPOSE 8080
 
 # Commande de démarrage
-CMD ["dotnet", "DiversityPub.dll"]
+ENTRYPOINT ["dotnet", "DiversityPub.dll"]
