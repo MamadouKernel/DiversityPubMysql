@@ -68,4 +68,22 @@ app.MapControllerRoute(
 // Mapper le hub SignalR
 app.MapHub<DiversityPub.Hubs.NotificationHub>("/notificationHub");
 
+// Appliquer les migrations automatiquement en production
+if (app.Environment.IsProduction())
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<DiversityPubDbContext>();
+        try
+        {
+            context.Database.Migrate();
+            Console.WriteLine("✅ Migrations appliquées avec succès");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erreur lors de l'application des migrations: {ex.Message}");
+        }
+    }
+}
+
 app.Run();
