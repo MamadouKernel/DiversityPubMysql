@@ -29,10 +29,9 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Variables d'environnement pour Railway
-ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-# Exposer le port
+# Exposer le port (Railway utilisera sa propre variable PORT)
 EXPOSE 8080
 
 # Commande de démarrage

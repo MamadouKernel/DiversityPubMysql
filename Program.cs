@@ -76,14 +76,23 @@ if (app.Environment.IsProduction())
         var context = scope.ServiceProvider.GetRequiredService<DiversityPubDbContext>();
         try
         {
+            Console.WriteLine("🔄 Tentative de connexion à la base de données...");
             context.Database.Migrate();
             Console.WriteLine("✅ Migrations appliquées avec succès");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Erreur lors de l'application des migrations: {ex.Message}");
+            Console.WriteLine($"📋 Stack trace: {ex.StackTrace}");
+            
+            // En production, on continue même si les migrations échouent
+            // pour éviter que l'application ne démarre pas du tout
+            Console.WriteLine("⚠️ L'application continue sans les migrations...");
         }
     }
 }
+
+// Ajouter un endpoint de healthcheck simple
+app.MapGet("/health", () => "OK");
 
 app.Run();
