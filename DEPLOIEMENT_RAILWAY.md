@@ -51,11 +51,13 @@
 ```env
 ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://0.0.0.0:$PORT
-MYSQL_HOST=${MYSQL_HOST}
-MYSQL_DATABASE=${MYSQL_DATABASE}
-MYSQL_USER=${MYSQL_USER}
-MYSQL_PASSWORD=${MYSQL_PASSWORD}
+MYSQL_HOST=mainline.proxy.rlwy.net
+MYSQL_DATABASE=railway
+MYSQL_USER=root
+MYSQL_PASSWORD=WCrDOYlSIPdNJriAlsizKEUSyCXmZRvE
 ```
+
+**⚠️ Important** : Utilisez les variables d'environnement Railway pour masquer les informations sensibles. Ne committez jamais les mots de passe dans Git.
 
 ### Étape 4 : Déployer l'Application
 
