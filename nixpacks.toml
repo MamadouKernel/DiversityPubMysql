@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["dotnet-sdk", "dotnet-runtime"]
+
+[phases.install]
+cmds = ["dotnet restore"]
+
+[phases.build]
+cmds = ["dotnet publish -c Release -o out"]
+
+[start]
+cmd = "dotnet out/DiversityPub.dll"

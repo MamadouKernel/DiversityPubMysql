@@ -1,27 +1,31 @@
-# Utiliser l'image officielle .NET 8
+# Utiliser l'image officielle .NET 8 Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
-# Image de build
+# Image de build avec SDK
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copier les fichiers de projet
+# Copier le fichier de projet et restaurer les dépendances
 COPY ["DiversityPub.csproj", "./"]
 RUN dotnet restore "DiversityPub.csproj"
 
-# Copier le reste du code source
+# Copier tout le code source
 COPY . .
+
+# Build de l'application
 RUN dotnet build "DiversityPub.csproj" -c Release -o /app/build
 
 # Publier l'application
 FROM build AS publish
-RUN dotnet publish "DiversityPub.csproj" -c Release -o /app/publish
+RUN dotnet publish "DiversityPub.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Image finale
 FROM base AS final
 WORKDIR /app
+
+# Copier les fichiers publiés
 COPY --from=publish /app/publish .
 
 # Variables d'environnement pour Railway

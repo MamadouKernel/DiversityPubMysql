@@ -1,0 +1,17 @@
+# Version simplifiée pour Railway avec Nixpacks
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+
+WORKDIR /app
+
+# Copier les fichiers publiés (sera fait par Railway)
+COPY . .
+
+# Variables d'environnement
+ENV ASPNETCORE_URLS=http://0.0.0.0:$PORT
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+# Exposer le port dynamique
+EXPOSE $PORT
+
+# Commande de démarrage
+CMD ["dotnet", "DiversityPub.dll"]

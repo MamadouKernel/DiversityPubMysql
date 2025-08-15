@@ -8,6 +8,23 @@
 
 ## 🔧 Étapes de Déploiement
 
+## 🐳 Options de Build
+
+### Option 1 : Dockerfile (Recommandé)
+- **Fichier** : `Dockerfile`
+- **Avantages** : Contrôle total, optimisé, multi-stage build
+- **Utilisation** : Railway détecte automatiquement le Dockerfile
+
+### Option 2 : Nixpacks
+- **Fichier** : `nixpacks.toml`
+- **Avantages** : Simple, automatique, optimisé pour Railway
+- **Utilisation** : Supprimez Dockerfile, gardez nixpacks.toml
+
+### Option 3 : Build Automatique
+- **Fichiers** : Aucun fichier spécial
+- **Avantages** : Très simple, Railway fait tout
+- **Utilisation** : Supprimez Dockerfile et nixpacks.toml
+
 ### Étape 1 : Créer un projet Railway
 
 1. Connectez-vous à [Railway](https://railway.app)
@@ -42,9 +59,20 @@ MYSQL_PASSWORD=${MYSQL_PASSWORD}
 
 ### Étape 4 : Déployer l'Application
 
-1. Railway détectera automatiquement le Dockerfile
+**Option 1 : Avec Dockerfile (Recommandé)**
+1. Railway détectera automatiquement le `Dockerfile`
 2. Le build se lancera automatiquement
 3. L'application sera déployée sur l'URL fournie par Railway
+
+**Option 2 : Avec Nixpacks**
+1. Supprimez le `Dockerfile` et gardez `nixpacks.toml`
+2. Railway utilisera Nixpacks pour le build
+3. L'application sera déployée automatiquement
+
+**Option 3 : Build automatique**
+1. Supprimez `Dockerfile` et `nixpacks.toml`
+2. Railway détectera automatiquement que c'est un projet .NET
+3. Le build se fera automatiquement
 
 ## 🗄️ Configuration de la Base de Données
 
