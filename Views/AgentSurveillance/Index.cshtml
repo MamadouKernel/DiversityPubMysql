@@ -14,11 +14,11 @@
                     </h1>
                     <p class="text-muted mb-0">Suivi en temps réel des positions et activités</p>
                 </div>
-                                 <div class="d-flex gap-2">
-                     <button onclick="updateStatistics()" class="btn btn-info">
-                         <i class="fas fa-sync-alt"></i> Actualiser
-                     </button>
-                 </div>
+                <div class="d-flex gap-2">
+                    <button onclick="updateStatistics()" class="btn btn-info">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                </div>
             </div>
 
             <!-- Statistiques -->
@@ -77,108 +77,123 @@
                 </div>
             </div>
 
-
-
-            <!-- Liste des agents -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-list"></i> Liste des Agents
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="agentsTable">
-                            <thead>
-                                <tr>
-                                    <th>Agent</th>
-                                    <th>Statut</th>
-                                    <th>Dernière Position</th>
-                                    <th>Activations Actives</th>
-                                    <th>Incidents</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var agent in Model)
-                                {
-                                    var lastPosition = agent.PositionsGPS.FirstOrDefault();
-                                    var isOnline = agent.EstConnecte; // Utiliser le statut de connexion direct
-                                    var activeActivations = agent.Activations.Count(a => a.Statut == DiversityPub.Models.enums.StatutActivation.EnCours);
-                                    var openIncidents = agent.Incidents.Count(i => i.Statut == "Ouvert" || i.Statut == "EnCours");
-                                    
-                                    <tr data-agent-id="@agent.Id">
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm me-3">
-                                                    <i class="fas fa-user-circle fa-2x text-primary"></i>
-                                                </div>
-                                                <div>
-                                                    <h6 class="mb-0">@agent.Utilisateur.Prenom @agent.Utilisateur.Nom</h6>
-                                                    <small class="text-muted">@agent.Utilisateur.Email</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
+            <!-- Grille de cards agents -->
+            <div class="row" id="agentsCardsContainer">
+                @foreach (var agent in Model)
+                {
+                    var lastPosition = agent.PositionsGPS.FirstOrDefault();
+                    var isOnline = agent.EstConnecte;
+                    var activeActivations = agent.Activations.Count(a => a.Statut == DiversityPub.Models.enums.StatutActivation.EnCours);
+                    var openIncidents = agent.Incidents.Count(i => i.Statut == "Ouvert" || i.Statut == "EnCours");
+                    
+                    <div class="col-lg-4 col-md-6 col-sm-12 mb-4 agent-card" data-agent-id="@agent.Id">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="agent-avatar me-3">
+                                        <i class="fas fa-user-circle"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">@agent.Utilisateur.Prenom @agent.Utilisateur.Nom</h6>
+                                        <small class="text-muted">@agent.Utilisateur.Email</small>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="@Url.Action("Details", "AgentSurveillance", new { id = agent.Id })">
+                                                <i class="fas fa-eye text-info"></i> Voir détails
+                                            </a>
+                                        </li>
+                                        @if (isOnline)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item text-warning" href="#" onclick="forceLogout('@agent.Id', '@agent.Utilisateur.Prenom @agent.Utilisateur.Nom')">
+                                                    <i class="fas fa-sign-out-alt"></i> Forcer déconnexion
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <small class="text-muted">Statut</small>
+                                        <div>
                                             <span class="badge bg-@(isOnline ? "success" : "secondary")">
                                                 <i class="fas fa-circle"></i> @(isOnline ? "En ligne" : "Hors ligne")
                                             </span>
-                                        </td>
-                                        <td>
-                                            @if (lastPosition != null)
-                                            {
-                                                <div>
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-map-marker-alt"></i> 
-                                                        @lastPosition.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture) / @lastPosition.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)
-                                                    </small>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        <i class="fas fa-clock"></i> 
-                                                        @lastPosition.Horodatage.ToString("dd/MM HH:mm")
-                                                    </small>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">Aucune position</span>
-                                            }
-                                        </td>
-                                        <td>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Activations</small>
+                                        <div>
                                             <span class="badge bg-info">@activeActivations</span>
-                                        </td>
-                                        <td>
-                                            @if (openIncidents > 0)
-                                            {
-                                                <span class="badge bg-danger">@openIncidents</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-success">0</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <a href="@Url.Action("Details", "AgentSurveillance", new { id = agent.Id })" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                @if (isOnline)
-                                                {
-                                                    <button class="btn btn-sm btn-outline-warning" 
-                                                            onclick="forceLogout('@agent.Id', '@agent.Utilisateur.Prenom @agent.Utilisateur.Nom')"
-                                                            title="Forcer la déconnexion">
-                                                        <i class="fas fa-sign-out-alt"></i>
-                                                    </button>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <small class="text-muted">Dernière Position</small>
+                                    <div>
+                                        @if (lastPosition != null)
+                                        {
+                                            <small>
+                                                <i class="fas fa-map-marker-alt text-danger"></i> 
+                                                @lastPosition.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture) / @lastPosition.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)
+                                            </small>
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock"></i> 
+                                                @lastPosition.Horodatage.ToString("dd/MM HH:mm")
+                                            </small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted"><i class="fas fa-map-marker-alt"></i> Aucune position</small>
+                                        }
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <small class="text-muted">Incidents</small>
+                                    <div>
+                                        @if (openIncidents > 0)
+                                        {
+                                            <span class="badge bg-danger">@openIncidents incidents ouverts</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Aucun incident</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-flex justify-content-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Details", "AgentSurveillance", new { id = agent.Id })" 
+                                           class="btn btn-outline-primary" title="Détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if (isOnline)
+                                        {
+                                            <button class="btn btn-outline-warning" 
+                                                    onclick="forceLogout('@agent.Id', '@agent.Utilisateur.Prenom @agent.Utilisateur.Nom')"
+                                                    title="Forcer la déconnexion">
+                                                <i class="fas fa-sign-out-alt"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                }
             </div>
         </div>
     </div>
@@ -202,21 +217,45 @@
 </div>
 
 <style>
-    .avatar-sm {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .badge i {
-        font-size: 0.7em;
-    }
-    
+.agent-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #A32D18, #EDAC00);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+}
 
+.agent-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.agent-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.badge i {
+    font-size: 0.7em;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
 </style>
-
 
 <script>
     // Variables globales
@@ -267,8 +306,8 @@
                     incidentsElement.textContent = openIncidents;
                 }
 
-                // Mettre à jour le tableau des agents
-                updateAgentsTable(agentsData);
+                // Mettre à jour les cards des agents
+                updateAgentsCards(agentsData);
             } else {
                 console.error('❌ Erreur API:', result.message);
             }
@@ -277,80 +316,229 @@
         }
     }
 
-    // Mettre à jour le tableau des agents
-    function updateAgentsTable(agents) {
-        const tbody = document.querySelector('#agentsTable tbody');
-        if (!tbody) return;
+    // Mettre à jour les cards des agents
+    function updateAgentsCards(agents) {
+        const container = document.getElementById('agentsCardsContainer');
+        if (!container) return;
 
-        tbody.innerHTML = '';
-        
+        // Cacher toutes les cards existantes
+        const existingCards = container.querySelectorAll('.agent-card');
+        existingCards.forEach(card => card.style.display = 'none');
+
+        // Mettre à jour ou créer les cards
         agents.forEach(agent => {
-            const row = document.createElement('tr');
-            row.setAttribute('data-agent-id', agent.agentId);
+            let card = container.querySelector(`[data-agent-id="${agent.agentId}"]`);
             
-            const lastPosition = agent.lastPosition;
-            const isOnline = agent.isOnline;
-            
-            row.innerHTML = `
-                <td>
+            if (!card) {
+                // Créer une nouvelle card si elle n'existe pas
+                card = createAgentCard(agent);
+                container.appendChild(card);
+            } else {
+                // Mettre à jour la card existante
+                updateAgentCard(card, agent);
+                card.style.display = 'block';
+            }
+        });
+    }
+
+    // Créer une nouvelle card agent
+    function createAgentCard(agent) {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'col-lg-4 col-md-6 col-sm-12 mb-4 agent-card';
+        cardDiv.setAttribute('data-agent-id', agent.agentId);
+        
+        const lastPosition = agent.lastPosition;
+        const isOnline = agent.isOnline;
+        
+        cardDiv.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
-                        <div class="avatar-sm me-3">
-                            <i class="fas fa-user-circle fa-2x text-primary"></i>
+                        <div class="agent-avatar me-3">
+                            <i class="fas fa-user-circle"></i>
                         </div>
                         <div>
                             <h6 class="mb-0">${agent.agentName}</h6>
                             <small class="text-muted">${agent.agentEmail}</small>
                         </div>
                     </div>
-                </td>
-                <td>
-                    <span class="badge bg-${isOnline ? 'success' : 'secondary'}">
-                        <i class="fas fa-circle"></i> ${isOnline ? 'En ligne' : 'Hors ligne'}
-                    </span>
-                </td>
-                <td>
-                    ${lastPosition ? `
-                        <div>
-                            <small class="text-muted">
-                                <i class="fas fa-map-marker-alt"></i> 
-                                ${lastPosition.latitude.toFixed(6)} / ${lastPosition.longitude.toFixed(6)}
-                            </small>
-                            <br>
-                            <small class="text-muted">
-                                <i class="fas fa-clock"></i> 
-                                ${new Date(lastPosition.horodatage).toLocaleString('fr-FR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})}
-                            </small>
-                        </div>
-                    ` : '<span class="text-muted">Aucune position</span>'}
-                </td>
-                <td>
-                    <span class="badge bg-info">${agent.activeActivations}</span>
-                </td>
-                <td>
-                    ${agent.openIncidents > 0 ? 
-                        `<span class="badge bg-danger">${agent.openIncidents}</span>` : 
-                        `<span class="badge bg-success">0</span>`
-                    }
-                </td>
-                <td>
-                    <div class="btn-group" role="group">
-                        <a href="/AgentSurveillance/Details/${agent.agentId}" 
-                           class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                        ${isOnline ? `
-                            <button class="btn btn-sm btn-outline-warning" 
-                                    onclick="forceLogout('${agent.agentId}', '${agent.agentName}')"
-                                    title="Forcer la déconnexion">
-                                <i class="fas fa-sign-out-alt"></i>
-                            </button>
-                        ` : ''}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="/AgentSurveillance/Details/${agent.agentId}">
+                                    <i class="fas fa-eye text-info"></i> Voir détails
+                                </a>
+                            </li>
+                            ${isOnline ? `
+                                <li>
+                                    <a class="dropdown-item text-warning" href="#" onclick="forceLogout('${agent.agentId}', '${agent.agentName}')">
+                                        <i class="fas fa-sign-out-alt"></i> Forcer déconnexion
+                                    </a>
+                                </li>
+                            ` : ''}
+                        </ul>
                     </div>
-                </td>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Statut</small>
+                            <div>
+                                <span class="badge bg-${isOnline ? 'success' : 'secondary'}">
+                                    <i class="fas fa-circle"></i> ${isOnline ? 'En ligne' : 'Hors ligne'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Activations</small>
+                            <div>
+                                <span class="badge bg-info">${agent.activeActivations}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Dernière Position</small>
+                        <div>
+                            ${lastPosition ? `
+                                <small>
+                                    <i class="fas fa-map-marker-alt text-danger"></i> 
+                                    ${lastPosition.latitude.toFixed(6)} / ${lastPosition.longitude.toFixed(6)}
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> 
+                                    ${new Date(lastPosition.horodatage).toLocaleString('fr-FR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})}
+                                </small>
+                            ` : '<small class="text-muted"><i class="fas fa-map-marker-alt"></i> Aucune position</small>'}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Incidents</small>
+                        <div>
+                            ${agent.openIncidents > 0 ? 
+                                `<span class="badge bg-danger">${agent.openIncidents} incidents ouverts</span>` : 
+                                `<span class="badge bg-success">Aucun incident</span>`
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/AgentSurveillance/Details/${agent.agentId}" 
+                               class="btn btn-outline-primary" title="Détails">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            ${isOnline ? `
+                                <button class="btn btn-outline-warning" 
+                                        onclick="forceLogout('${agent.agentId}', '${agent.agentName}')"
+                                        title="Forcer la déconnexion">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return cardDiv;
+    }
+
+    // Mettre à jour une card agent existante
+    function updateAgentCard(card, agent) {
+        const lastPosition = agent.lastPosition;
+        const isOnline = agent.isOnline;
+        
+        // Mettre à jour le nom et email
+        const nameElement = card.querySelector('h6');
+        const emailElement = card.querySelector('small.text-muted');
+        if (nameElement) nameElement.textContent = agent.agentName;
+        if (emailElement) emailElement.textContent = agent.agentEmail;
+        
+        // Mettre à jour le statut
+        const statusBadge = card.querySelector('.badge');
+        if (statusBadge) {
+            statusBadge.className = `badge bg-${isOnline ? 'success' : 'secondary'}`;
+            statusBadge.innerHTML = `<i class="fas fa-circle"></i> ${isOnline ? 'En ligne' : 'Hors ligne'}`;
+        }
+        
+        // Mettre à jour les activations
+        const activationsBadge = card.querySelector('.badge.bg-info');
+        if (activationsBadge) {
+            activationsBadge.textContent = agent.activeActivations;
+        }
+        
+        // Mettre à jour la position
+        const positionDiv = card.querySelector('.mb-3:nth-child(2) div');
+        if (positionDiv) {
+            if (lastPosition) {
+                positionDiv.innerHTML = `
+                    <small>
+                        <i class="fas fa-map-marker-alt text-danger"></i> 
+                        ${lastPosition.latitude.toFixed(6)} / ${lastPosition.longitude.toFixed(6)}
+                    </small>
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> 
+                        ${new Date(lastPosition.horodatage).toLocaleString('fr-FR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})}
+                    </small>
+                `;
+            } else {
+                positionDiv.innerHTML = '<small class="text-muted"><i class="fas fa-map-marker-alt"></i> Aucune position</small>';
+            }
+        }
+        
+        // Mettre à jour les incidents
+        const incidentsDiv = card.querySelector('.mb-3:nth-child(3) div');
+        if (incidentsDiv) {
+            if (agent.openIncidents > 0) {
+                incidentsDiv.innerHTML = `<span class="badge bg-danger">${agent.openIncidents} incidents ouverts</span>`;
+            } else {
+                incidentsDiv.innerHTML = '<span class="badge bg-success">Aucun incident</span>';
+            }
+        }
+        
+        // Mettre à jour le dropdown et les boutons
+        const dropdown = card.querySelector('.dropdown-menu');
+        if (dropdown) {
+            dropdown.innerHTML = `
+                <li>
+                    <a class="dropdown-item" href="/AgentSurveillance/Details/${agent.agentId}">
+                        <i class="fas fa-eye text-info"></i> Voir détails
+                    </a>
+                </li>
+                ${isOnline ? `
+                    <li>
+                        <a class="dropdown-item text-warning" href="#" onclick="forceLogout('${agent.agentId}', '${agent.agentName}')">
+                            <i class="fas fa-sign-out-alt"></i> Forcer déconnexion
+                        </a>
+                    </li>
+                ` : ''}
             `;
-            
-            tbody.appendChild(row);
-        });
+        }
+        
+        const btnGroup = card.querySelector('.btn-group');
+        if (btnGroup) {
+            btnGroup.innerHTML = `
+                <a href="/AgentSurveillance/Details/${agent.agentId}" 
+                   class="btn btn-outline-primary" title="Détails">
+                    <i class="fas fa-eye"></i>
+                </a>
+                ${isOnline ? `
+                    <button class="btn btn-outline-warning" 
+                            onclick="forceLogout('${agent.agentId}', '${agent.agentName}')"
+                            title="Forcer la déconnexion">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                ` : ''}
+            `;
+        }
     }
 
     // Mettre à jour les statistiques toutes les 30 secondes
@@ -379,8 +567,6 @@
             }
         }
     }
-
-
 </script>
 
  
