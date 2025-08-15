@@ -40,20 +40,31 @@
 
                                 <dt class="col-sm-4">Rôle</dt>
                                 <dd class="col-sm-8">
-                                    <span class="badge badge-@(Model.Role == DiversityPub.Models.enums.Role.Admin ? "danger" : Model.Role == DiversityPub.Models.enums.Role.AgentTerrain ? "warning" : "info")">
-                                        @Model.Role
+                                    @{
+                                        var roleClass = Model.Role switch
+                                        {
+                                            DiversityPub.Models.enums.Role.Admin => "danger",
+                                            DiversityPub.Models.enums.Role.AgentTerrain => "warning",
+                                            DiversityPub.Models.enums.Role.AgentSurveillance => "info",
+                                            _ => "secondary"
+                                        };
+                                        var roleText = Model.Role.ToString();
+                                    }
+                                    <span class="badge badge-@roleClass">
+                                        @roleText
                                     </span>
                                 </dd>
 
                                 <dt class="col-sm-4">Statut</dt>
                                 <dd class="col-sm-8">
-                                    <span class="badge badge-@(Model.Supprimer == 0 ? "success" : "secondary")">
-                                        @(Model.Supprimer == 0 ? "Actif" : "Supprimé")
+                                    @{
+                                        var statutClass = Model.Supprimer == 0 ? "success" : "secondary";
+                                        var statutText = Model.Supprimer == 0 ? "Actif" : "Supprimé";
+                                    }
+                                    <span class="badge badge-@statutClass">
+                                        @statutText
                                     </span>
                                 </dd>
-
-                                <dt class="col-sm-4">ID</dt>
-                                <dd class="col-sm-8">@Model.Id</dd>
                             </dl>
                         </div>
                     </div>
