@@ -6,6 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Forcer l'utilisation d'appsettings.json même en production
+builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
 // Logging au démarrage
 Console.WriteLine("🚀 Démarrage de l'application DiversityPub...");
 Console.WriteLine($"🔧 Environment: {builder.Environment.EnvironmentName}");
