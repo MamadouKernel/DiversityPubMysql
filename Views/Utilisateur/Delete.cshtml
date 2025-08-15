@@ -43,14 +43,14 @@
                                     @{
                                         var roleClass = Model.Role switch
                                         {
-                                            DiversityPub.Models.enums.Role.Admin => "danger",
-                                            DiversityPub.Models.enums.Role.AgentTerrain => "warning",
-                                            DiversityPub.Models.enums.Role.Client => "info",
-                                            _ => "secondary"
+                                            DiversityPub.Models.enums.Role.Admin => "bg-danger",
+                                            DiversityPub.Models.enums.Role.AgentTerrain => "bg-warning",
+                                            DiversityPub.Models.enums.Role.Client => "bg-info",
+                                            _ => "bg-secondary"
                                         };
                                         var roleText = Model.Role.ToString();
                                     }
-                                    <span class="badge badge-@roleClass">
+                                    <span class="badge @roleClass text-white">
                                         @roleText
                                     </span>
                                 </dd>
@@ -58,10 +58,10 @@
                                 <dt class="col-sm-4">Statut</dt>
                                 <dd class="col-sm-8">
                                     @{
-                                        var statutClass = Model.Supprimer == 0 ? "success" : "secondary";
+                                        var statutClass = Model.Supprimer == 0 ? "bg-success" : "bg-secondary";
                                         var statutText = Model.Supprimer == 0 ? "Actif" : "Supprimé";
                                     }
-                                    <span class="badge badge-@statutClass">
+                                    <span class="badge @statutClass text-white">
                                         @statutText
                                     </span>
                                 </dd>
