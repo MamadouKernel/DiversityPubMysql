@@ -1,0 +1,17 @@
+@model IEnumerable<DiversityPub.Models.Activation>
+@{
+    Layout = "_AgentLayout";
+    ViewData["Title"] = "Agent Dashboard";
+    var agent = ViewBag.Agent as DiversityPub.Models.AgentTerrain;
+}
+
+<script>
+    // Redirection automatique vers les missions
+    window.location.href = '@Url.Action("Missions", "AgentTerrain")';
+</script>
+
+<div class="content-card text-center">
+    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #A32D18; margin-bottom: 1rem;"></i>
+    <h3>Redirection...</h3>
+    <p>Vous allez être redirigé vers vos missions.</p>
+</div>
