@@ -21,13 +21,31 @@ namespace DiversityPub.Controllers
         }
 
         // GET: Utilisateur
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 6)
         {
-            var utilisateurs = await _context.Utilisateurs
+            var query = _context.Utilisateurs
                 .Include(u => u.Client)
                 .Include(u => u.AgentTerrain)
-                .OrderBy(u => u.Nom)
+                .Where(u => u.Supprimer == 0)
+                .OrderByDescending(u => u.Id); // Les plus récents en premier (par ID)
+
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            
+            // Ajuster la page si elle dépasse les limites
+            page = Math.Max(1, Math.Min(page, totalPages > 0 ? totalPages : 1));
+            
+            var utilisateurs = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalItems = totalItems;
+            ViewBag.HasPreviousPage = page > 1;
+            ViewBag.HasNextPage = page < totalPages;
             
             return View(utilisateurs);
         }

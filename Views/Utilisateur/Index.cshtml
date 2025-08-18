@@ -53,7 +53,7 @@
 
 <!-- Grille de cards utilisateurs -->
 <div class="row">
-    @foreach (var utilisateur in Model.Where(u => u.Supprimer == 0))
+    @foreach (var utilisateur in Model)
     {
         <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
             <div class="card h-100 shadow-sm">
@@ -208,7 +208,112 @@
     }
 </div>
 
-@if (!Model.Any(u => u.Supprimer == 0))
+<!-- Pagination -->
+@if (ViewBag.TotalPages > 1)
+{
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            Affichage de @(((ViewBag.CurrentPage - 1) * ViewBag.PageSize) + 1) à @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalItems)) sur @ViewBag.TotalItems utilisateurs
+                        </div>
+                        <nav aria-label="Pagination des utilisateurs">
+                            <ul class="pagination pagination-sm mb-0">
+                                <!-- Bouton Précédent -->
+                                @if (ViewBag.HasPreviousPage)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1 })">
+                                            <i class="fas fa-chevron-left"></i> Précédent
+                                        </a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="fas fa-chevron-left"></i> Précédent
+                                        </span>
+                                    </li>
+                                }
+
+                                <!-- Numéros de pages -->
+                                @{
+                                    var startPage = Math.Max(1, ViewBag.CurrentPage - 2);
+                                    var endPage = Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2);
+                                }
+
+                                @if (startPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = 1 })">1</a>
+                                    </li>
+                                    @if (startPage > 2)
+                                    {
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    }
+                                }
+
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    if (i == ViewBag.CurrentPage)
+                                    {
+                                        <li class="page-item active">
+                                            <span class="page-link">@i</span>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="@Url.Action("Index", new { page = i })">@i</a>
+                                        </li>
+                                    }
+                                }
+
+                                @if (endPage < ViewBag.TotalPages)
+                                {
+                                    @if (endPage < ViewBag.TotalPages - 1)
+                                    {
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    }
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.TotalPages })">@ViewBag.TotalPages</a>
+                                    </li>
+                                }
+
+                                <!-- Bouton Suivant -->
+                                @if (ViewBag.HasNextPage)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1 })">
+                                            Suivant <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            Suivant <i class="fas fa-chevron-right"></i>
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!Model.Any())
 {
     <div class="row">
         <div class="col-12">
