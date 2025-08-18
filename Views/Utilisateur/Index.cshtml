@@ -60,10 +60,22 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <div class="avatar-circle me-3">
-                            <span class="avatar-text">@utilisateur.Prenom.Substring(0, 1)@utilisateur.Nom.Substring(0, 1)</span>
+                            @{
+                                var prenomInitial = !string.IsNullOrEmpty(utilisateur.Prenom) ? utilisateur.Prenom.Substring(0, 1) : "";
+                                var nomInitial = !string.IsNullOrEmpty(utilisateur.Nom) ? utilisateur.Nom.Substring(0, 1) : "";
+                                var initiales = prenomInitial + nomInitial;
+                            }
+                            @if (!string.IsNullOrEmpty(initiales))
+                            {
+                                <span class="avatar-text">@initiales</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-user"></i>
+                            }
                         </div>
                         <div>
-                            <h6 class="mb-0">@utilisateur.Prenom @utilisateur.Nom</h6>
+                            <h6 class="mb-0">@(string.IsNullOrEmpty(utilisateur.Prenom) ? "" : utilisateur.Prenom) @(string.IsNullOrEmpty(utilisateur.Nom) ? "" : utilisateur.Nom)</h6>
                             <small class="text-muted">
                                 <i class="fas fa-envelope"></i> @utilisateur.Email
                             </small>
