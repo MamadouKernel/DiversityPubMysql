@@ -36,7 +36,7 @@ try
     
     if (!string.IsNullOrEmpty(connectionString))
     {
-        builder.Services.AddDbContext<DiversityPubDbContext>(options =>
+builder.Services.AddDbContext<DiversityPubDbContext>(options =>
             options.UseMySql(connectionString, 
                 ServerVersion.AutoDetect(connectionString)));
         
@@ -56,8 +56,9 @@ catch (Exception ex)
 // Enregistrer les services hébergés (conditionnellement)
 try
 {
-    builder.Services.AddHostedService<CampagneExpirationService>();
-    builder.Services.AddHostedService<GeolocationService>();
+builder.Services.AddHostedService<CampagneExpirationService>();
+builder.Services.AddHostedService<GeolocationService>();
+builder.Services.AddHostedService<CampagneStatusBackgroundService>();
     Console.WriteLine("✅ Services hébergés configurés");
 }
 catch (Exception ex)
@@ -68,8 +69,9 @@ catch (Exception ex)
 // Enregistrer les services HTTP
 try
 {
-    builder.Services.AddHttpClient<GeocodingService>();
-    builder.Services.AddScoped<GeocodingService>();
+builder.Services.AddHttpClient<GeocodingService>();
+builder.Services.AddScoped<GeocodingService>();
+builder.Services.AddScoped<ICampagneStatusService, CampagneStatusService>();
     Console.WriteLine("✅ Services HTTP configurés");
 }
 catch (Exception ex)
@@ -80,12 +82,12 @@ catch (Exception ex)
 // Configuration de l'authentification par cookies
 try
 {
-    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(options =>
-        {
-            options.LoginPath = "/Auth/Login";
-            options.LogoutPath = "/Auth/Logout";
-            options.AccessDeniedPath = "/Auth/AccessDenied";
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/AccessDenied";
             options.ExpireTimeSpan = TimeSpan.FromHours(1);
             options.SlidingExpiration = true;
             options.Cookie.HttpOnly = true;
@@ -125,7 +127,7 @@ app.MapControllerRoute(
 // Mapper le hub SignalR (conditionnellement)
 try
 {
-    app.MapHub<DiversityPub.Hubs.NotificationHub>("/notificationHub");
+app.MapHub<DiversityPub.Hubs.NotificationHub>("/notificationHub");
     Console.WriteLine("✅ SignalR configuré");
 }
 catch (Exception ex)

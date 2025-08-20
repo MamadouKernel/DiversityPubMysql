@@ -19,8 +19,8 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
-</div>
 
 <!-- Filtres -->
 <div class="row mb-4">
@@ -93,24 +93,24 @@
                         <div class="badge bg-info" id="resultsChip" style="display:none"></div>
                     </div>
                 </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
 @if (Model.Any())
 {
     <!-- Grille de cards activations -->
     <div class="row" id="activationsCardsContainer">
-        @foreach (var activation in Model)
-        {
+                        @foreach (var activation in Model)
+                        {
             <div class="col-lg-4 col-md-6 col-sm-12 mb-4 activation-card" 
                  data-nom="@activation.Nom"
-                 data-campagne="@activation.Campagne.Nom"
-                 data-lieu="@($"{activation.Lieu.Nom} - {activation.Lieu.Adresse}")"
-                 data-statut="@activation.Statut"
-                 data-date="@activation.DateActivation.ToString("yyyy-MM-dd")"
-                 data-agents="@activation.AgentsTerrain.Count">
+                                data-campagne="@activation.Campagne.Nom"
+                                data-lieu="@($"{activation.Lieu.Nom} - {activation.Lieu.Adresse}")"
+                                data-statut="@activation.Statut"
+                                data-date="@activation.DateActivation.ToString("yyyy-MM-dd")"
+                                data-agents="@activation.AgentsTerrain.Count">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
@@ -119,8 +119,8 @@
                             </div>
                             <div>
                                 <h6 class="mb-0">@activation.Nom</h6>
-                                @if (!string.IsNullOrEmpty(activation.Description))
-                                {
+                                    @if (!string.IsNullOrEmpty(activation.Description))
+                                    {
                                     <small class="text-muted">@activation.Description</small>
                                 }
                             </div>
@@ -200,8 +200,8 @@
                                 <div>
                                     <small><i class="fas fa-clock text-primary"></i> @($"{activation.HeureDebut.Hours:D2}:{activation.HeureDebut.Minutes:D2}") - @($"{activation.HeureFin.Hours:D2}:{activation.HeureFin.Minutes:D2}")</small>
                                 </div>
-                            </div>
-                        </div>
+            </div>
+        </div>
                         
                         <div class="mb-3">
                             <small class="text-muted">Responsable</small>
@@ -209,9 +209,9 @@
                                 @if (activation.Responsable != null)
                                 {
                                     <small><i class="fas fa-user-tie text-info"></i> @activation.Responsable.Utilisateur.Prenom @activation.Responsable.Utilisateur.Nom</small>
-                                }
-                                else
-                                {
+    }
+    else
+    {
                                     <small class="text-muted"><i class="fas fa-user-slash"></i> Aucun</small>
                                 }
                             </div>
@@ -243,10 +243,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
-        }
-    </div>
+        </div>
+    }
+</div>
 }
 else
 {
@@ -310,8 +310,8 @@ else
 
     document.addEventListener('DOMContentLoaded', () => {
         cacheCards();
-        attachEvents();
-        applyFilters();
+      attachEvents();
+      applyFilters();
     });
 
     function cacheCards(){
@@ -325,9 +325,9 @@ else
                 statut: card.dataset.statut || '',
                 date: card.dataset.date || '',
                 agents: parseInt(card.dataset.agents) || 0,
-            }
-        }));
-        filteredData = [...originalData];
+        }
+      }));
+      filteredData = [...originalData];
     }
 
     function attachEvents(){
@@ -352,23 +352,23 @@ else
         const d1 = fs('dateStart'), d2 = fs('dateEnd');
 
         filteredData = originalData.filter(it => {
-            const t = `${it.data.nom} ${it.data.campagne} ${it.data.lieu}`.toLowerCase();
-            if(q && !t.includes(q)) return false;
+        const t = `${it.data.nom} ${it.data.campagne} ${it.data.lieu}`.toLowerCase();
+        if(q && !t.includes(q)) return false;
             if(status && it.data.statut !== status) return false;
             if(camp && it.data.campagne !== camp) return false;
             if(loc && it.data.lieu !== loc) return false;
             if(ag === 'with-agents' && it.data.agents <= 0) return false;
             if(ag === 'without-agents' && it.data.agents > 0) return false;
-            if(d1 || d2){
-                const dt = new Date(it.data.date);
-                if(d1 && dt < new Date(d1)) return false;
-                if(d2 && dt > new Date(d2)) return false;
-            }
-            return true;
-        });
+        if(d1 || d2){
+          const dt = new Date(it.data.date);
+          if(d1 && dt < new Date(d1)) return false;
+          if(d2 && dt > new Date(d2)) return false;
+        }
+        return true;
+      });
 
         renderCards();
-        updateChip();
+      updateChip();
     }
 
     function renderCards(){
@@ -383,8 +383,8 @@ else
     }
 
     function updateChip(){
-        const chip = document.getElementById('resultsChip');
-        if(!chip) return;
+      const chip = document.getElementById('resultsChip');
+      if(!chip) return;
         const c = filteredData.length, t = originalData.length;
         if(c === t){ 
             chip.style.display = 'none'; 
@@ -395,18 +395,18 @@ else
     }
 
     function clearFilters(){
-        ['searchInput','statusFilter','campaignFilter','locationFilter','agentsFilter','dateStart','dateEnd']
+      ['searchInput','statusFilter','campaignFilter','locationFilter','agentsFilter','dateStart','dateEnd']
             .forEach(id => { 
                 const el = document.getElementById(id); 
                 if(el) el.value = ''; 
             });
-        applyFilters();
+      applyFilters();
     }
 
     function confirmDelete(id){
-        if(confirm('Êtes-vous sûr de vouloir supprimer cette activation ?')){
-            window.location.href = '@Url.Action("Delete", "Activation")?id=' + id;
-        }
+      if(confirm('Êtes-vous sûr de vouloir supprimer cette activation ?')){
+        window.location.href = '@Url.Action("Delete", "Activation")?id=' + id;
+      }
     }
 
     function debounce(fn, wait){ 

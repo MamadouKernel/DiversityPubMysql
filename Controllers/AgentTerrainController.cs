@@ -4,6 +4,7 @@ using DiversityPub.Data;
 using DiversityPub.Models;
 using DiversityPub.Models.enums;
 using DiversityPub.DTOs;
+using DiversityPub.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -13,10 +14,12 @@ namespace DiversityPub.Controllers
     public class AgentTerrainController : Controller
     {
         private readonly DiversityPubDbContext _context;
+        private readonly ICampagneStatusService _campagneStatusService;
 
-        public AgentTerrainController(DiversityPubDbContext context)
+        public AgentTerrainController(DiversityPubDbContext context, ICampagneStatusService campagneStatusService)
         {
             _context = context;
+            _campagneStatusService = campagneStatusService;
         }
 
         // GET: AgentTerrain
@@ -272,6 +275,9 @@ namespace DiversityPub.Controllers
                 }
                 
                 await _context.SaveChangesAsync();
+                
+                // Mettre à jour le statut de la campagne automatiquement
+                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
 
                 return Json(new { 
                     success = true, 
@@ -375,6 +381,9 @@ namespace DiversityPub.Controllers
                 }
                 
                 await _context.SaveChangesAsync();
+                
+                // Mettre à jour le statut de la campagne automatiquement
+                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
 
                 return Json(new { 
                     success = true, 
@@ -445,6 +454,9 @@ namespace DiversityPub.Controllers
                 Console.WriteLine($"Date: {activation.DateSuspension}");
                 
                 await _context.SaveChangesAsync();
+                
+                // Mettre à jour le statut de la campagne automatiquement
+                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
 
                 return Json(new { 
                     success = true, 
@@ -510,6 +522,9 @@ namespace DiversityPub.Controllers
                 }
                 
                 await _context.SaveChangesAsync();
+                
+                // Mettre à jour le statut de la campagne automatiquement
+                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
 
                 return Json(new { 
                     success = true, 

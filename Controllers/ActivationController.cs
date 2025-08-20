@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DiversityPub.Data;
 using DiversityPub.Models;
+using DiversityPub.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -11,10 +12,12 @@ namespace DiversityPub.Controllers
     public class ActivationController : Controller
     {
         private readonly DiversityPubDbContext _context;
+        private readonly ICampagneStatusService _campagneStatusService;
 
-        public ActivationController(DiversityPubDbContext context)
+        public ActivationController(DiversityPubDbContext context, ICampagneStatusService campagneStatusService)
         {
             _context = context;
+            _campagneStatusService = campagneStatusService;
         }
 
         // GET: Activation
@@ -482,6 +485,9 @@ namespace DiversityPub.Controllers
 
             _context.Update(activation);
             await _context.SaveChangesAsync();
+            
+            // Mettre à jour le statut de la campagne automatiquement
+            await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
             
             TempData["Success"] = $"✅ Statut de l'activation changé vers {nouveauStatut} !";
             return RedirectToAction("Index", "Assignation");
