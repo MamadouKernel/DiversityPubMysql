@@ -72,6 +72,7 @@ try
 builder.Services.AddHttpClient<GeocodingService>();
 builder.Services.AddScoped<GeocodingService>();
 builder.Services.AddScoped<ICampagneStatusService, CampagneStatusService>();
+builder.Services.AddScoped<IActivationValidationService, ActivationValidationService>();
     Console.WriteLine("✅ Services HTTP configurés");
 }
 catch (Exception ex)

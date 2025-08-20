@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using DiversityPub.Data;
 using DiversityPub.Models;
 using DiversityPub.Models.enums;
+using DiversityPub.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace DiversityPub.Controllers
@@ -11,10 +12,12 @@ namespace DiversityPub.Controllers
     public class AssignationController : Controller
     {
         private readonly DiversityPubDbContext _context;
+        private readonly IActivationValidationService _validationService;
 
-        public AssignationController(DiversityPubDbContext context)
+        public AssignationController(DiversityPubDbContext context, IActivationValidationService validationService)
         {
             _context = context;
+            _validationService = validationService;
         }
 
         // GET: Assignation
@@ -76,40 +79,14 @@ namespace DiversityPub.Controllers
             // Validation : Permettre la modification des assignations même pour les activations en cours
             // Suppression de la restriction qui empêchait de retirer tous les agents d'une activation en cours
             
-            // Validation des agents terrain - vérifier qu'ils ne sont pas déjà affectés à d'autres activations non terminées
+            // Validation des agents terrain avec le service de validation
             if (agentIds != null && agentIds.Any())
             {
-                var agentsEnConflit = new List<string>();
+                var agentErrors = await _validationService.ValidateAgentAvailabilityAsync(agentIds, activation.DateActivation, activation.HeureDebut, activation.HeureFin, activation.Id);
                 
-                foreach (var agentId in agentIds)
+                if (agentErrors.Any())
                 {
-                    // Vérifier si l'agent est déjà affecté à une activation non terminée à la même date (exclure l'activation actuelle)
-                    var activationsConflitantes = await _context.Activations
-                        .Include(a => a.AgentsTerrain)
-                        .Where(a => a.Id != id // Exclure l'activation en cours de modification
-                                   && a.DateActivation == activation.DateActivation 
-                                   && a.Statut != StatutActivation.Terminee
-                                   && a.AgentsTerrain.Any(at => at.Id == agentId))
-                        .ToListAsync();
-
-                    if (activationsConflitantes.Any())
-                    {
-                        var agent = await _context.AgentsTerrain
-                            .Include(at => at.Utilisateur)
-                            .FirstOrDefaultAsync(at => at.Id == agentId);
-                        
-                        if (agent != null)
-                        {
-                            var nomAgent = $"{agent.Utilisateur.Prenom} {agent.Utilisateur.Nom}";
-                            var activations = string.Join(", ", activationsConflitantes.Select(a => a.Nom));
-                            agentsEnConflit.Add($"{nomAgent} (déjà affecté à: {activations})");
-                        }
-                    }
-                }
-
-                if (agentsEnConflit.Any())
-                {
-                    TempData["Error"] = $"❌ Les agents suivants ne peuvent pas être affectés car ils sont déjà engagés dans d'autres activations non terminées: {string.Join("; ", agentsEnConflit)}";
+                    TempData["Error"] = $"❌ Conflits d'horaires détectés : {string.Join("; ", agentErrors)}";
                     return RedirectToAction(nameof(Edit), new { id });
                 }
             }

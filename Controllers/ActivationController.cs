@@ -13,11 +13,13 @@ namespace DiversityPub.Controllers
     {
         private readonly DiversityPubDbContext _context;
         private readonly ICampagneStatusService _campagneStatusService;
+        private readonly IActivationValidationService _validationService;
 
-        public ActivationController(DiversityPubDbContext context, ICampagneStatusService campagneStatusService)
+        public ActivationController(DiversityPubDbContext context, ICampagneStatusService campagneStatusService, IActivationValidationService validationService)
         {
             _context = context;
             _campagneStatusService = campagneStatusService;
+            _validationService = validationService;
         }
 
         // GET: Activation
@@ -133,63 +135,47 @@ namespace DiversityPub.Controllers
         {
             try
             {
-                // Vérifier que la date d'activation est dans l'intervalle de la campagne
-                var campagneValidation = await _context.Campagnes
-                    .FirstOrDefaultAsync(c => c.Id == activation.CampagneId);
-                
-                if (campagneValidation != null)
+                // Validation avec le service
+                var validationErrors = new List<string>();
+
+                // 1. Validation de la date par rapport à la campagne
+                var campagneError = await _validationService.ValidateCampagneDateAsync(activation.CampagneId, activation.DateActivation);
+                if (campagneError != null)
                 {
-                    if (activation.DateActivation < campagneValidation.DateDebut || activation.DateActivation > campagneValidation.DateFin)
-                    {
-                        ModelState.AddModelError("DateActivation", $"La date d'activation doit être comprise entre {campagneValidation.DateDebut:dd/MM/yyyy} et {campagneValidation.DateFin:dd/MM/yyyy}.");
-                    }
-                }
-                else
-                {
-                    // Fallback si aucune campagne n'est sélectionnée
-                    if (activation.DateActivation < DateTime.Today)
-                    {
-                        ModelState.AddModelError("DateActivation", "La date d'activation ne peut pas être dans le passé.");
-                    }
+                    ModelState.AddModelError("DateActivation", campagneError);
                 }
 
-                if (activation.HeureDebut >= activation.HeureFin)
+                // 2. Validation des heures
+                var heuresError = _validationService.ValidateHeuresAsync(activation.HeureDebut, activation.HeureFin);
+                if (heuresError != null)
                 {
-                    ModelState.AddModelError("HeureFin", "L'heure de fin doit être postérieure à l'heure de début.");
+                    ModelState.AddModelError("HeureFin", heuresError);
                 }
 
-                // Vérifier les conflits d'horaires pour le lieu
-                var conflitsLieu = await _context.Activations
-                    .Where(a => a.LieuId == activation.LieuId && 
-                                a.DateActivation == activation.DateActivation &&
-                                a.Id != activation.Id)
-                    .ToListAsync();
-
-                foreach (var conflit in conflitsLieu)
+                // 3. Validation des conflits de lieu
+                var lieuErrors = await _validationService.ValidateLieuAvailabilityAsync(activation.LieuId, activation.DateActivation, activation.HeureDebut, activation.HeureFin);
+                foreach (var error in lieuErrors)
                 {
-                    if ((activation.HeureDebut < conflit.HeureFin && activation.HeureFin > conflit.HeureDebut))
-                    {
-                        ModelState.AddModelError("HeureDebut", $"Conflit d'horaires avec l'activation '{conflit.Nom}' au même lieu.");
-                        break;
-                    }
+                    ModelState.AddModelError("HeureDebut", error);
                 }
 
-                // Vérifier les conflits pour le responsable
+                // 4. Validation des conflits de responsable
                 if (activation.ResponsableId.HasValue)
                 {
-                    var conflitsResponsable = await _context.Activations
-                        .Where(a => a.ResponsableId == activation.ResponsableId && 
-                                    a.DateActivation == activation.DateActivation &&
-                                    a.Id != activation.Id)
-                        .ToListAsync();
-
-                    foreach (var conflit in conflitsResponsable)
+                    var responsableErrors = await _validationService.ValidateResponsableAvailabilityAsync(activation.ResponsableId.Value, activation.DateActivation, activation.HeureDebut, activation.HeureFin);
+                    foreach (var error in responsableErrors)
                     {
-                        if ((activation.HeureDebut < conflit.HeureFin && activation.HeureFin > conflit.HeureDebut))
-                        {
-                            ModelState.AddModelError("ResponsableId", $"Le responsable est déjà occupé avec l'activation '{conflit.Nom}' à ces horaires.");
-                            break;
-                        }
+                        ModelState.AddModelError("ResponsableId", error);
+                    }
+                }
+
+                // 5. Validation des conflits d'agents terrain (IMPORTANT !)
+                if (AgentsTerrainIds != null && AgentsTerrainIds.Any())
+                {
+                    var agentErrors = await _validationService.ValidateAgentAvailabilityAsync(AgentsTerrainIds, activation.DateActivation, activation.HeureDebut, activation.HeureFin);
+                    foreach (var error in agentErrors)
+                    {
+                        ModelState.AddModelError("AgentsTerrainIds", error);
                     }
                 }
 
@@ -353,20 +339,47 @@ namespace DiversityPub.Controllers
                         }
                     }
 
-                    // Validation des heures
-                    if (activationExistante.HeureDebut >= activationExistante.HeureFin)
+                    // Validation avec le service
+                    var validationErrors = new List<string>();
+
+                    // 1. Validation de la date par rapport à la campagne
+                    var campagneError = await _validationService.ValidateCampagneDateAsync(activationExistante.CampagneId, activationExistante.DateActivation);
+                    if (campagneError != null)
                     {
-                        ModelState.AddModelError("HeureFin", "L'heure de fin doit être postérieure à l'heure de début.");
+                        ModelState.AddModelError("DateActivation", campagneError);
                     }
 
-                    // Validation de la date d'activation dans l'intervalle de la campagne
-                    if (activationExistante.Campagne != null)
+                    // 2. Validation des heures
+                    var heuresError = _validationService.ValidateHeuresAsync(activationExistante.HeureDebut, activationExistante.HeureFin);
+                    if (heuresError != null)
                     {
-                        if (activationExistante.DateActivation < activationExistante.Campagne.DateDebut || 
-                            activationExistante.DateActivation > activationExistante.Campagne.DateFin)
+                        ModelState.AddModelError("HeureFin", heuresError);
+                    }
+
+                    // 3. Validation des conflits de lieu
+                    var lieuErrors = await _validationService.ValidateLieuAvailabilityAsync(activationExistante.LieuId, activationExistante.DateActivation, activationExistante.HeureDebut, activationExistante.HeureFin, activationExistante.Id);
+                    foreach (var error in lieuErrors)
+                    {
+                        ModelState.AddModelError("HeureDebut", error);
+                    }
+
+                    // 4. Validation des conflits de responsable
+                    if (activationExistante.ResponsableId.HasValue)
+                    {
+                        var responsableErrors = await _validationService.ValidateResponsableAvailabilityAsync(activationExistante.ResponsableId.Value, activationExistante.DateActivation, activationExistante.HeureDebut, activationExistante.HeureFin, activationExistante.Id);
+                        foreach (var error in responsableErrors)
                         {
-                            ModelState.AddModelError("DateActivation", 
-                                $"La date d'activation doit être comprise entre {activationExistante.Campagne.DateDebut:dd/MM/yyyy} et {activationExistante.Campagne.DateFin:dd/MM/yyyy}.");
+                            ModelState.AddModelError("ResponsableId", error);
+                        }
+                    }
+
+                    // 5. Validation des conflits d'agents terrain (IMPORTANT !)
+                    if (AgentsTerrainIds != null && AgentsTerrainIds.Any())
+                    {
+                        var agentErrors = await _validationService.ValidateAgentAvailabilityAsync(AgentsTerrainIds, activationExistante.DateActivation, activationExistante.HeureDebut, activationExistante.HeureFin, activationExistante.Id);
+                        foreach (var error in agentErrors)
+                        {
+                            ModelState.AddModelError("AgentsTerrainIds", error);
                         }
                     }
 
