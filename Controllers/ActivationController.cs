@@ -172,10 +172,28 @@ namespace DiversityPub.Controllers
                 // 5. Validation des conflits d'agents terrain (IMPORTANT !)
                 if (AgentsTerrainIds != null && AgentsTerrainIds.Any())
                 {
+                    Console.WriteLine($"🔍 Validation des agents terrain: {AgentsTerrainIds.Count} agents sélectionnés");
                     var agentErrors = await _validationService.ValidateAgentAvailabilityAsync(AgentsTerrainIds, activation.DateActivation, activation.HeureDebut, activation.HeureFin);
+                    Console.WriteLine($"🔍 Résultat validation: {agentErrors.Count} erreurs trouvées");
+                    
                     foreach (var error in agentErrors)
                     {
+                        Console.WriteLine($"❌ Erreur de validation: {error}");
                         ModelState.AddModelError("AgentsTerrainIds", error);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ Aucun agent terrain sélectionné");
+                }
+
+                Console.WriteLine($"🔍 Validation ModelState: {ModelState.IsValid}");
+                if (!ModelState.IsValid)
+                {
+                    Console.WriteLine("❌ Erreurs de validation détectées:");
+                    foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        Console.WriteLine($"❌ {error.ErrorMessage}");
                     }
                 }
 

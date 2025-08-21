@@ -40,15 +40,20 @@ namespace DiversityPub.Services
 
             if (agentIds == null || !agentIds.Any())
             {
+                Console.WriteLine("🔍 Validation agents: Aucun agent sélectionné, pas de conflit");
                 return errors; // Aucun agent sélectionné, pas de conflit
             }
 
+            Console.WriteLine($"🔍 Validation agents: Vérification de {agentIds.Count} agents pour le {dateActivation:dd/MM/yyyy} de {heureDebut:hh\\:mm} à {heureFin:hh\\:mm}");
+
             foreach (var agentId in agentIds)
             {
+                Console.WriteLine($"🔍 Validation agent {agentId}");
                 var hasConflict = await HasAgentConflictAsync(agentId, dateActivation, heureDebut, heureFin, excludeActivationId);
                 
                 if (hasConflict)
                 {
+                    Console.WriteLine($"❌ Conflit détecté pour l'agent {agentId}");
                     var agent = await _context.AgentsTerrain
                         .Include(at => at.Utilisateur)
                         .FirstOrDefaultAsync(at => at.Id == agentId);
@@ -60,11 +65,18 @@ namespace DiversityPub.Services
                         
                         var nomsActivations = string.Join(", ", conflits.Select(a => $"'{a.Nom}' ({a.HeureDebut:hh\\:mm}-{a.HeureFin:hh\\:mm} à {a.Lieu?.Nom})"));
                         
-                        errors.Add($"❌ L'agent {nomAgent} est déjà affecté à d'autres activations le {dateActivation:dd/MM/yyyy} : {nomsActivations}");
+                        var errorMessage = $"❌ L'agent {nomAgent} est déjà affecté à d'autres activations le {dateActivation:dd/MM/yyyy} : {nomsActivations}";
+                        errors.Add(errorMessage);
+                        Console.WriteLine($"❌ Erreur de validation: {errorMessage}");
                     }
+                }
+                else
+                {
+                    Console.WriteLine($"✅ Aucun conflit pour l'agent {agentId}");
                 }
             }
 
+            Console.WriteLine($"🔍 Validation agents terminée: {errors.Count} erreurs trouvées");
             return errors;
         }
 
@@ -94,6 +106,8 @@ namespace DiversityPub.Services
         /// <returns>Liste des activations en conflit</returns>
         public async Task<List<Activation>> GetConflictingActivationsAsync(List<Guid> agentIds, DateTime dateActivation, TimeSpan heureDebut, TimeSpan heureFin, Guid? excludeActivationId = null)
         {
+            Console.WriteLine($"🔍 Recherche de conflits pour {agentIds.Count} agents le {dateActivation:dd/MM/yyyy} de {heureDebut:hh\\:mm} à {heureFin:hh\\:mm}");
+
             var query = _context.Activations
                 .Include(a => a.AgentsTerrain)
                 .Include(a => a.Lieu)
@@ -105,14 +119,22 @@ namespace DiversityPub.Services
             if (excludeActivationId.HasValue)
             {
                 query = query.Where(a => a.Id != excludeActivationId.Value);
+                Console.WriteLine($"🔍 Exclusion de l'activation {excludeActivationId.Value}");
             }
 
             var activations = await query.ToListAsync();
+            Console.WriteLine($"🔍 Trouvé {activations.Count} activations avec les agents spécifiés");
 
             // Filtrer les activations avec chevauchement d'horaires
             var conflits = activations.Where(a => 
                 (heureDebut < a.HeureFin && heureFin > a.HeureDebut) // Chevauchement d'horaires
             ).ToList();
+
+            Console.WriteLine($"🔍 Trouvé {conflits.Count} conflits d'horaires");
+            foreach (var conflit in conflits)
+            {
+                Console.WriteLine($"🔍 Conflit: {conflit.Nom} ({conflit.HeureDebut:hh\\:mm}-{conflit.HeureFin:hh\\:mm})");
+            }
 
             return conflits;
         }
