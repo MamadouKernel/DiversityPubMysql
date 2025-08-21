@@ -124,6 +124,7 @@ namespace DiversityPub.Controllers
 
                 var activation = await _context.Activations
                     .Include(a => a.Medias)
+                    .Include(a => a.Campagne)
                     .FirstOrDefaultAsync(a => a.Id == activationId);
 
                 if (activation == null)
@@ -145,7 +146,32 @@ namespace DiversityPub.Controllers
                 activation.DateValidationPreuves = DateTime.Now;
                 activation.ValideParId = utilisateur.Id;
 
+                // Si les preuves sont validées, changer le statut de l'activation à "Terminée"
+                // car du point de vue du client, une activation avec des preuves validées est terminée
+                if (validee && activation.Statut != DiversityPub.Models.enums.StatutActivation.Terminee)
+                {
+                    activation.Statut = DiversityPub.Models.enums.StatutActivation.Terminee;
+                    Console.WriteLine($"✅ Activation '{activation.Nom}' terminée automatiquement après validation des preuves");
+                }
+
                 await _context.SaveChangesAsync();
+
+                // Mettre à jour le statut de la campagne si toutes les activations sont terminées
+                if (validee && activation.Campagne != null)
+                {
+                    var toutesActivationsCampagne = await _context.Activations
+                        .Where(a => a.CampagneId == activation.CampagneId)
+                        .ToListAsync();
+
+                    var toutesTerminees = toutesActivationsCampagne.All(a => a.Statut == DiversityPub.Models.enums.StatutActivation.Terminee);
+                    
+                    if (toutesTerminees && activation.Campagne.Statut != DiversityPub.Models.enums.StatutCampagne.Terminee)
+                    {
+                        activation.Campagne.Statut = DiversityPub.Models.enums.StatutCampagne.Terminee;
+                        await _context.SaveChangesAsync();
+                        Console.WriteLine($"✅ Campagne '{activation.Campagne.Nom}' terminée automatiquement (toutes les activations terminées)");
+                    }
+                }
 
                 var message = validee ? "Activation validée avec succès. Les preuves sont maintenant visibles par le client." : "Activation rejetée.";
                 return Json(new { success = true, message = message });
