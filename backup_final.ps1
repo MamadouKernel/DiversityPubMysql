@@ -1,0 +1,266 @@
+# Script PowerShell final pour backup de structure MySQL
+param(
+    [string]$Commentaire = "",
+    [string]$OutputPath = "Backups"
+)
+
+Write-Host "=== Backup final de la base de données DiversityPub ===" -ForegroundColor Green
+
+# Créer le dossier de backup s'il n'existe pas
+if (!(Test-Path $OutputPath)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force
+    Write-Host "✓ Dossier de backup créé: $OutputPath" -ForegroundColor Green
+}
+
+# Générer le nom du fichier de backup
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$backupFileName = "diversitypub_backup_$timestamp.sql"
+$backupFilePath = Join-Path $OutputPath $backupFileName
+
+Write-Host "Création du backup: $backupFileName" -ForegroundColor Yellow
+
+# Créer le contenu SQL du backup
+$currentDate = Get-Date -Format "dd/MM/yyyy HH:mm:ss"
+$currentUser = $env:USERNAME
+
+# Construire le contenu SQL ligne par ligne
+$sqlContent = ""
+$sqlContent += "/* =============================================" + "`r`n"
+$sqlContent += "   Backup de la base de données DiversityPub" + "`r`n"
+$sqlContent += "   Créé le: $currentDate" + "`r`n"
+$sqlContent += "   Par: $currentUser" + "`r`n"
+$sqlContent += "   Commentaire: $Commentaire" + "`r`n"
+$sqlContent += "   Type: Structure de base de données" + "`r`n"
+$sqlContent += "   ============================================= */" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "SET FOREIGN_KEY_CHECKS=0;" + "`r`n"
+$sqlContent += "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';" + "`r`n"
+$sqlContent += "SET AUTOCOMMIT = 0;" + "`r`n"
+$sqlContent += "START TRANSACTION;" + "`r`n"
+$sqlContent += "SET time_zone = '+00:00';" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Créer la base de données */" + "`r`n"
+$sqlContent += "CREATE DATABASE IF NOT EXISTS railway DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "USE railway;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Utilisateur */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Utilisateur;" + "`r`n"
+$sqlContent += "CREATE TABLE Utilisateur (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Nom varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Prenom varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Email varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  MotDePasse varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Role int NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  DerniereConnexion datetime(6) NULL," + "`r`n"
+$sqlContent += "  EstActif tinyint(1) NOT NULL DEFAULT '1'," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  UNIQUE KEY IX_Utilisateur_Email (Email)" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Client */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Client;" + "`r`n"
+$sqlContent += "CREATE TABLE Client (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Nom varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Email varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Telephone varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  Adresse text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  EstActif tinyint(1) NOT NULL DEFAULT '1'," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Campagne */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Campagne;" + "`r`n"
+$sqlContent += "CREATE TABLE Campagne (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Nom varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Description text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  DateDebut datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  DateFin datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  Statut int NOT NULL," + "`r`n"
+$sqlContent += "  ClientId int NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_Campagne_ClientId (ClientId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Campagne_Client_ClientId FOREIGN KEY (ClientId) REFERENCES Client (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Lieu */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Lieu;" + "`r`n"
+$sqlContent += "CREATE TABLE Lieu (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Nom varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Adresse text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  Latitude decimal(10,8) NULL," + "`r`n"
+$sqlContent += "  Longitude decimal(11,8) NULL," + "`r`n"
+$sqlContent += "  CampagneId int NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_Lieu_CampagneId (CampagneId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Lieu_Campagne_CampagneId FOREIGN KEY (CampagneId) REFERENCES Campagne (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Activation */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Activation;" + "`r`n"
+$sqlContent += "CREATE TABLE Activation (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Nom varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Description text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  DateDebut datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  DateFin datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  Statut int NOT NULL," + "`r`n"
+$sqlContent += "  CampagneId int NOT NULL," + "`r`n"
+$sqlContent += "  LieuId int NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_Activation_CampagneId (CampagneId)," + "`r`n"
+$sqlContent += "  KEY IX_Activation_LieuId (LieuId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Activation_Campagne_CampagneId FOREIGN KEY (CampagneId) REFERENCES Campagne (Id) ON DELETE CASCADE," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Activation_Lieu_LieuId FOREIGN KEY (LieuId) REFERENCES Lieu (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table AgentTerrain */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS AgentTerrain;" + "`r`n"
+$sqlContent += "CREATE TABLE AgentTerrain (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  UtilisateurId int NOT NULL," + "`r`n"
+$sqlContent += "  Nom varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Prenom varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Telephone varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  Email varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  EstActif tinyint(1) NOT NULL DEFAULT '1'," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_AgentTerrain_UtilisateurId (UtilisateurId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_AgentTerrain_Utilisateur_UtilisateurId FOREIGN KEY (UtilisateurId) REFERENCES Utilisateur (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table PositionGPS */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS PositionGPS;" + "`r`n"
+$sqlContent += "CREATE TABLE PositionGPS (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  AgentTerrainId int NOT NULL," + "`r`n"
+$sqlContent += "  Latitude decimal(10,8) NOT NULL," + "`r`n"
+$sqlContent += "  Longitude decimal(11,8) NOT NULL," + "`r`n"
+$sqlContent += "  Timestamp datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  Precision decimal(10,2) NULL," + "`r`n"
+$sqlContent += "  Vitesse decimal(10,2) NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_PositionGPS_AgentTerrainId (AgentTerrainId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_PositionGPS_AgentTerrain_AgentTerrainId FOREIGN KEY (AgentTerrainId) REFERENCES AgentTerrain (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Feedback */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Feedback;" + "`r`n"
+$sqlContent += "CREATE TABLE Feedback (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Titre varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Contenu text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  ClientId int NOT NULL," + "`r`n"
+$sqlContent += "  EstResolu tinyint(1) NOT NULL DEFAULT '0'," + "`r`n"
+$sqlContent += "  Reponse text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  DateReponse datetime(6) NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_Feedback_ClientId (ClientId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Feedback_Client_ClientId FOREIGN KEY (ClientId) REFERENCES Client (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Incident */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Incident;" + "`r`n"
+$sqlContent += "CREATE TABLE Incident (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Titre varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Description text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  AgentTerrainId int NOT NULL," + "`r`n"
+$sqlContent += "  Latitude decimal(10,8) NULL," + "`r`n"
+$sqlContent += "  Longitude decimal(11,8) NULL," + "`r`n"
+$sqlContent += "  EstResolu tinyint(1) NOT NULL DEFAULT '0'," + "`r`n"
+$sqlContent += "  DateResolution datetime(6) NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_Incident_AgentTerrainId (AgentTerrainId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Incident_AgentTerrain_AgentTerrainId FOREIGN KEY (AgentTerrainId) REFERENCES AgentTerrain (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table Media */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS Media;" + "`r`n"
+$sqlContent += "CREATE TABLE Media (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  NomFichier varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  CheminFichier varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Type int NOT NULL," + "`r`n"
+$sqlContent += "  Taille bigint NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  AgentTerrainId int NULL," + "`r`n"
+$sqlContent += "  IncidentId int NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_Media_AgentTerrainId (AgentTerrainId)," + "`r`n"
+$sqlContent += "  KEY IX_Media_IncidentId (IncidentId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Media_AgentTerrain_AgentTerrainId FOREIGN KEY (AgentTerrainId) REFERENCES AgentTerrain (Id) ON DELETE SET NULL," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_Media_Incident_IncidentId FOREIGN KEY (IncidentId) REFERENCES Incident (Id) ON DELETE SET NULL" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Table DemandeActivation */" + "`r`n"
+$sqlContent += "DROP TABLE IF EXISTS DemandeActivation;" + "`r`n"
+$sqlContent += "CREATE TABLE DemandeActivation (" + "`r`n"
+$sqlContent += "  Id int NOT NULL AUTO_INCREMENT," + "`r`n"
+$sqlContent += "  Nom varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL," + "`r`n"
+$sqlContent += "  Description text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL," + "`r`n"
+$sqlContent += "  DateDebut datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  DateFin datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  Statut int NOT NULL," + "`r`n"
+$sqlContent += "  ClientId int NOT NULL," + "`r`n"
+$sqlContent += "  LieuId int NOT NULL," + "`r`n"
+$sqlContent += "  DateCreation datetime(6) NOT NULL," + "`r`n"
+$sqlContent += "  PRIMARY KEY (Id)," + "`r`n"
+$sqlContent += "  KEY IX_DemandeActivation_ClientId (ClientId)," + "`r`n"
+$sqlContent += "  KEY IX_DemandeActivation_LieuId (LieuId)," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_DemandeActivation_Client_ClientId FOREIGN KEY (ClientId) REFERENCES Client (Id) ON DELETE CASCADE," + "`r`n"
+$sqlContent += "  CONSTRAINT FK_DemandeActivation_Lieu_LieuId FOREIGN KEY (LieuId) REFERENCES Lieu (Id) ON DELETE CASCADE" + "`r`n"
+$sqlContent += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "/* Données de base */" + "`r`n"
+$sqlContent += "INSERT INTO Utilisateur (Nom, Prenom, Email, MotDePasse, Role, DateCreation, EstActif) " + "`r`n"
+$sqlContent += "SELECT 'Admin', 'System', 'admin@diversitypub.ci', 'AQAAAAEAACcQAAAAELB+...', 0, NOW(), 1" + "`r`n"
+$sqlContent += "WHERE NOT EXISTS (SELECT 1 FROM Utilisateur WHERE Email = 'admin@diversitypub.ci');" + "`r`n"
+$sqlContent += "" + "`r`n"
+$sqlContent += "SET FOREIGN_KEY_CHECKS=1;" + "`r`n"
+$sqlContent += "COMMIT;" + "`r`n"
+
+# Écrire le contenu dans le fichier de backup
+try {
+    $sqlContent | Out-File -FilePath $backupFilePath -Encoding UTF8
+    $fileSize = (Get-Item $backupFilePath).Length
+    
+    Write-Host "✅ Backup créé avec succès!" -ForegroundColor Green
+    Write-Host "Fichier: $backupFileName" -ForegroundColor White
+    Write-Host "Taille: $([math]::Round($fileSize / 1KB, 2)) KB" -ForegroundColor White
+    
+    # Créer les métadonnées
+    $metadata = @{
+        FileName = $backupFileName
+        CreatedAt = Get-Date
+        CreatedBy = $env:USERNAME
+        Commentaire = $Commentaire
+        FileSize = $fileSize
+        Database = "railway"
+        Type = "Structure + Données de base"
+        Method = "Script PowerShell final"
+    }
+    
+    $metadataPath = Join-Path $OutputPath "metadata_$timestamp.json"
+    $metadata | ConvertTo-Json -Depth 10 | Out-File -FilePath $metadataPath -Encoding UTF8
+    
+    Write-Host "✅ Métadonnées créées: metadata_$timestamp.json" -ForegroundColor Green
+}
+catch {
+    Write-Host "❌ Erreur lors du backup: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+Write-Host "=== Backup final terminé ===" -ForegroundColor Green
+Write-Host "Note: Ce backup contient la structure de la base de données." -ForegroundColor Yellow
+Write-Host "Pour un backup complet avec toutes les données, installez mysqldump." -ForegroundColor Yellow

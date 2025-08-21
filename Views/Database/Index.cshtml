@@ -15,70 +15,72 @@
             </div>
             <div class="card-body">
                 <!-- Messages d'alerte -->
-                @if (TempData["Success"] != null)
-                {
+    @if (TempData["Success"] != null)
+    {
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         @TempData["Success"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                }
-                @if (TempData["Error"] != null)
-                {
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         @TempData["Error"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                }
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
                 <!-- Statistiques de la base de données -->
                 <div class="row mb-4">
                     <div class="col-12">
                         <h5><i class="fas fa-chart-bar"></i> Statistiques de la Base de Données</h5>
                     </div>
-                    <div class="col-md-2">
-                        <div class="card bg-primary text-white">
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-2 col-sm-4 mb-3">
+                        <div class="card stats-card bg-primary text-white h-100">
                             <div class="card-body text-center">
-                                <h4>@dbStats.TotalCampagnes</h4>
+                                <h4 class="mb-0">@dbStats.TotalCampagnes</h4>
                                 <small>Campagnes</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="card bg-success text-white">
+                    <div class="col-md-2 col-sm-4 mb-3">
+                        <div class="card stats-card bg-success text-white h-100">
                             <div class="card-body text-center">
-                                <h4>@dbStats.TotalActivations</h4>
+                                <h4 class="mb-0">@dbStats.TotalActivations</h4>
                                 <small>Activations</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="card bg-info text-white">
+                    <div class="col-md-2 col-sm-4 mb-3">
+                        <div class="card stats-card bg-info text-white h-100">
                             <div class="card-body text-center">
-                                <h4>@dbStats.TotalClients</h4>
+                                <h4 class="mb-0">@dbStats.TotalClients</h4>
                                 <small>Clients</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="card bg-warning text-white">
+                    <div class="col-md-2 col-sm-4 mb-3">
+                        <div class="card stats-card bg-warning text-white h-100">
                             <div class="card-body text-center">
-                                <h4>@dbStats.TotalUtilisateurs</h4>
+                                <h4 class="mb-0">@dbStats.TotalUtilisateurs</h4>
                                 <small>Utilisateurs</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="card bg-secondary text-white">
+                    <div class="col-md-2 col-sm-4 mb-3">
+                        <div class="card stats-card bg-secondary text-white h-100">
                             <div class="card-body text-center">
-                                <h4>@dbStats.TotalAgentsTerrain</h4>
+                                <h4 class="mb-0">@dbStats.TotalAgentsTerrain</h4>
                                 <small>Agents Terrain</small>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="card bg-dark text-white">
+                    <div class="col-md-2 col-sm-4 mb-3">
+                        <div class="card stats-card bg-dark text-white h-100">
                             <div class="card-body text-center">
-                                <h4>@dbStats.TotalMedias</h4>
+                                <h4 class="mb-0">@dbStats.TotalMedias</h4>
                                 <small>Médias</small>
                             </div>
                         </div>
@@ -86,13 +88,13 @@
                 </div>
 
                 <!-- Détails des statistiques -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
+    <div class="row mb-4">
+        <div class="col-md-4">
                         <div class="card">
-                            <div class="card-header">
+                <div class="card-header">
                                 <h6 class="mb-0">Activations par Statut</h6>
-                            </div>
-                            <div class="card-body">
+                </div>
+                <div class="card-body">
                                 @foreach (var stat in dbStats.ActivationsParStatut)
                                 {
                                     <div class="d-flex justify-content-between mb-2">
@@ -100,15 +102,15 @@
                                         <span class="badge bg-primary">@stat.Count</span>
                                     </div>
                                 }
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
                         <div class="card">
-                            <div class="card-header">
+                <div class="card-header">
                                 <h6 class="mb-0">Campagnes par Statut</h6>
-                            </div>
-                            <div class="card-body">
+                </div>
+                <div class="card-body">
                                 @foreach (var stat in dbStats.CampagnesParStatut)
                                 {
                                     <div class="d-flex justify-content-between mb-2">
@@ -116,38 +118,38 @@
                                         <span class="badge bg-success">@stat.Count</span>
                                     </div>
                                 }
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
                         <div class="card">
-                            <div class="card-header">
+                <div class="card-header">
                                 <h6 class="mb-0">Médias par Type</h6>
-                            </div>
-                            <div class="card-body">
-                                @foreach (var type in dbStats.MediasParType)
+                </div>
+                <div class="card-body">
+                                @foreach (var stat in dbStats.MediasParType)
                                 {
                                     <div class="d-flex justify-content-between mb-2">
-                                        <span>@type.Type</span>
-                                        <span class="badge bg-info">@type.Count</span>
+                                        <span>@stat.Type</span>
+                                        <span class="badge bg-info">@stat.Count</span>
                                     </div>
                                 }
-                            </div>
-                        </div>
-                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
                 <!-- Gestion des sauvegardes -->
-                <div class="row mb-4">
+    <div class="row mb-4">
                     <div class="col-12">
                         <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="fas fa-save"></i> Gestion des Sauvegardes</h5>
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#backupModal">
                                     <i class="fas fa-plus"></i> Nouvelle Sauvegarde
                                 </button>
-                            </div>
-                            <div class="card-body">
+                </div>
+                <div class="card-body">
                                 @if (backupHistory != null && backupHistory.Any())
                                 {
                                     <div class="table-responsive">
@@ -155,10 +157,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Fichier</th>
+                                                    <th>Date</th>
                                                     <th>Taille</th>
-                                                    <th>Créé le</th>
-                                                    <th>Par</th>
-                                                    <th>Commentaire</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
@@ -167,25 +167,15 @@
                                                 {
                                                     <tr>
                                                         <td>@backup.FileName</td>
-                                                        <td>@FormatFileSize(backup.FileSize)</td>
                                                         <td>@backup.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                                                        <td>@backup.CreatedBy</td>
-                                                        <td>@backup.Commentaire</td>
+                                                        <td>@FormatFileSize(backup.FileSize)</td>
                                                         <td>
-                                                            <div class="btn-group" role="group">
-                                                                <a href="@Url.Action("DownloadBackup", new { fileName = backup.FileName })" 
-                                                                   class="btn btn-sm btn-outline-primary" title="Télécharger">
-                                                                    <i class="fas fa-download"></i>
-                                                                </a>
-                                                                <button type="button" class="btn btn-sm btn-outline-success" 
-                                                                        onclick="restoreBackup('@backup.FileName')" title="Restaurer">
-                                                                    <i class="fas fa-undo"></i>
-                                                                </button>
-                                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                                        onclick="deleteBackup('@backup.FileName')" title="Supprimer">
-                                                                    <i class="fas fa-trash"></i>
-                                                                </button>
-                                                            </div>
+                                                            <button class="btn btn-sm btn-success" onclick="restoreBackup('@backup.FileName')">
+                                                                <i class="fas fa-undo"></i> Restaurer
+                                                            </button>
+                                                            <button class="btn btn-sm btn-danger" onclick="deleteBackup('@backup.FileName')">
+                                                                <i class="fas fa-trash"></i> Supprimer
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 }
@@ -195,21 +185,23 @@
                                 }
                                 else
                                 {
-                                    <p class="text-muted text-center">Aucune sauvegarde trouvée</p>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> Aucune sauvegarde trouvée.
+                                    </div>
                                 }
-                            </div>
-                        </div>
-                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
                 <!-- Gestion des tables -->
-                <div class="row mb-4">
+        <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header">
+                    <div class="card-header">
                                 <h5 class="mb-0"><i class="fas fa-table"></i> Vider une Table</h5>
-                            </div>
-                            <div class="card-body">
+                    </div>
+                    <div class="card-body">
                                 <form id="truncateForm">
                                     <div class="mb-3">
                                         <label for="tableName" class="form-label">Sélectionner une table :</label>
@@ -226,26 +218,47 @@
                                             <option value="Lieux">Lieux</option>
                                         </select>
                                     </div>
-                                    <button type="submit" class="btn btn-warning" onclick="return confirm('⚠️ Êtes-vous sûr de vouloir vider cette table ? Cette action est irréversible !')">
+                                    <button type="submit" class="btn btn-warning" id="truncateBtn">
                                         <i class="fas fa-trash"></i> Vider la Table
                                     </button>
                                 </form>
-                            </div>
-                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                    <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-bomb"></i> Vidage Général</h5>
                     </div>
+                    <div class="card-body">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Attention !</strong> Cette action va supprimer TOUTES les données de TOUTES les tables.
+                                </div>
+                                <p class="text-muted small mb-3">
+                                    Tables concernées : Medias, PositionGPS, Incidents, Feedbacks, Activations, 
+                                    AgentsTerrain, Lieux, Campagnes, Clients, Utilisateurs
+                                </p>
+                                <button type="button" class="btn btn-danger w-100" id="truncateAllBtn" 
+                                        onclick="return confirm('⚠️ ATTENTION ! Cette action est IRREVERSIBLE !\n\nÊtes-vous ABSOLUMENT sûr de vouloir supprimer TOUTES les données de TOUTES les tables ?\n\nCette action ne peut pas être annulée !')">
+                                    <i class="fas fa-bomb"></i> Vider TOUTES les Tables
+                                </button>
+                                    </div>
+                                    </div>
+                                </div>
                     <div class="col-md-6">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0"><i class="fas fa-code"></i> Requête SQL</h5>
-                            </div>
+                                </div>
                             <div class="card-body">
                                 <form id="queryForm">
                                     <div class="mb-3">
                                         <label for="sqlQuery" class="form-label">Requête SQL (SELECT uniquement) :</label>
                                         <textarea class="form-control" id="sqlQuery" name="sqlQuery" rows="3" 
                                                   placeholder="SELECT * FROM Campagnes LIMIT 10;" required></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-info">
+                            </div>
+                                    <button type="submit" class="btn btn-info" id="queryBtn">
                                         <i class="fas fa-play"></i> Exécuter
                                     </button>
                                 </form>
@@ -253,26 +266,26 @@
                                     <div class="alert alert-info">
                                         <h6>Résultat :</h6>
                                         <pre id="queryResultText"></pre>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
                 <!-- Informations de connexion -->
-                <div class="row">
-                    <div class="col-12">
+    <div class="row">
+        <div class="col-12">
                         <div class="card">
-                            <div class="card-header">
+                <div class="card-header">
                                 <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informations de Connexion</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label">Chaîne de connexion (mot de passe masqué) :</label>
                                     <input type="text" class="form-control" value="@connectionString" readonly>
-                                </div>
-                            </div>
+                    </div>
+                </div>
                         </div>
                     </div>
                 </div>
@@ -289,21 +302,51 @@
                 <h5 class="modal-title">Nouvelle Sauvegarde</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="Backup" method="post">
-                <div class="modal-body">
+            <form asp-action="Backup" method="post" id="backupForm">
+            <div class="modal-body">
                     <div class="mb-3">
                         <label for="commentaire" class="form-label">Commentaire (optionnel) :</label>
                         <textarea class="form-control" id="commentaire" name="commentaire" rows="3" 
                                   placeholder="Description de cette sauvegarde..."></textarea>
-                    </div>
                 </div>
+                    </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="backupBtn">
                         <i class="fas fa-save"></i> Créer la Sauvegarde
-                    </button>
+                        </button>
+                    </div>
+                </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de progression -->
+<div class="modal fade progress-modal" id="progressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressTitle">
+                    <i class="fas fa-spinner fa-spin"></i> Traitement en cours...
+                </h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-4">
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             id="progressBar" role="progressbar" style="width: 0%" 
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            <span id="progressText">0%</span>
+                        </div>
+                    </div>
                 </div>
-            </form>
+                <div class="mb-3">
+                    <div class="spinner-border text-primary" role="status" id="mainSpinner">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+                <p class="mb-0" id="progressMessage">Initialisation...</p>
+            </div>
         </div>
     </div>
 </div>
@@ -319,6 +362,127 @@
 
 @section Scripts {
     <script>
+        // Variables globales pour la progression
+        let progressInterval;
+        let currentAction = '';
+        let progressModal;
+        let progressBar;
+        let progressText;
+        let progressMessage;
+        let progressTitle;
+
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+            progressBar = document.getElementById('progressBar');
+            progressText = document.getElementById('progressText');
+            progressMessage = document.getElementById('progressMessage');
+            progressTitle = document.getElementById('progressTitle');
+        });
+
+        // Fonction pour démarrer la progression
+        function startProgress(action, title, initialMessage) {
+            currentAction = action;
+            progressTitle.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${title}`;
+            progressMessage.textContent = initialMessage || 'Initialisation...';
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+            progressText.textContent = '0%';
+            progressModal.show();
+
+            // Simuler la progression
+            let progress = 0;
+            progressInterval = setInterval(() => {
+                progress += Math.random() * 15 + 5; // Progression aléatoire entre 5-20%
+                if (progress > 90) progress = 90; // Ne pas dépasser 90% avant la fin
+                
+                updateProgress(progress, getProgressMessage(progress));
+            }, 500);
+        }
+
+        // Fonction pour mettre à jour la progression
+        function updateProgress(percent, message) {
+            progressBar.style.width = percent + '%';
+            progressBar.setAttribute('aria-valuenow', percent);
+            progressText.textContent = Math.round(percent) + '%';
+            if (message) progressMessage.textContent = message;
+        }
+
+        // Fonction pour terminer la progression
+        function completeProgress(message) {
+            clearInterval(progressInterval);
+            updateProgress(100, message || 'Terminé !');
+            
+            setTimeout(() => {
+                progressModal.hide();
+                setTimeout(() => {
+                    location.reload();
+                }, 300);
+            }, 1000);
+        }
+
+        // Fonction pour échouer la progression
+        function failProgress(message) {
+            clearInterval(progressInterval);
+            progressTitle.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Erreur';
+            progressMessage.textContent = message || 'Une erreur est survenue';
+            progressBar.className = 'progress-bar bg-danger';
+            
+            setTimeout(() => {
+                progressModal.hide();
+                setTimeout(() => {
+                    progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
+                }, 500);
+            }, 3000);
+        }
+
+        // Messages de progression selon l'action
+        function getProgressMessage(percent) {
+            const messages = {
+                'backup': [
+                    'Analyse de la structure de la base...',
+                    'Préparation des données...',
+                    'Création du fichier de sauvegarde...',
+                    'Écriture des données...',
+                    'Finalisation de la sauvegarde...'
+                ],
+                'restore': [
+                    'Lecture du fichier de sauvegarde...',
+                    'Analyse de la structure...',
+                    'Préparation de la restauration...',
+                    'Restauration des données...',
+                    'Vérification de l\'intégrité...'
+                ],
+                'truncate': [
+                    'Vérification des contraintes...',
+                    'Désactivation des clés étrangères...',
+                    'Vidage de la table...',
+                    'Réactivation des clés étrangères...',
+                    'Finalisation...'
+                ],
+                'truncateAll': [
+                    'Préparation du vidage général...',
+                    'Désactivation des contraintes...',
+                    'Vidage des tables de données...',
+                    'Vidage des tables de configuration...',
+                    'Vidage des tables principales...',
+                    'Réactivation des contraintes...',
+                    'Finalisation du nettoyage...'
+                ],
+                'query': [
+                    'Validation de la requête...',
+                    'Connexion à la base...',
+                    'Exécution de la requête...',
+                    'Récupération des résultats...',
+                    'Formatage des données...'
+                ]
+            };
+
+            const actionMessages = messages[currentAction] || messages['query'];
+            const index = Math.floor((percent / 100) * actionMessages.length);
+            return actionMessages[Math.min(index, actionMessages.length - 1)];
+        }
+
         // Fonction pour formater la taille des fichiers
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
@@ -328,11 +492,16 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Restaurer une sauvegarde
+        // Restaurer une sauvegarde avec progression
         function restoreBackup(fileName) {
             if (confirm('⚠️ Êtes-vous sûr de vouloir restaurer cette sauvegarde ? Cela écrasera toutes les données actuelles !')) {
-                document.getElementById('restoreFileName').value = fileName;
-                document.getElementById('restoreForm').submit();
+                startProgress('restore', 'Restauration en cours', 'Début de la restauration...');
+                
+                // Simuler le délai de traitement
+                setTimeout(() => {
+                    document.getElementById('restoreFileName').value = fileName;
+                    document.getElementById('restoreForm').submit();
+                }, 2000);
             }
         }
 
@@ -344,7 +513,7 @@
             }
         }
 
-        // Vider une table
+        // Vider une table avec progression
         document.getElementById('truncateForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -353,6 +522,8 @@
                 alert('❌ Veuillez sélectionner une table');
                 return;
             }
+
+            startProgress('truncate', 'Vidage de la table', `Vidage de la table ${tableName}...`);
 
             fetch('@Url.Action("TruncateTable")', {
                 method: 'POST',
@@ -365,18 +536,45 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('✅ ' + data.message);
-                    location.reload();
+                    completeProgress('✅ Table vidée avec succès !');
                 } else {
-                    alert('❌ ' + data.message);
+                    failProgress('❌ ' + data.message);
                 }
             })
             .catch(error => {
-                alert('❌ Erreur : ' + error.message);
+                failProgress('❌ Erreur : ' + error.message);
             });
         });
 
-        // Exécuter une requête SQL
+        // Vider toutes les tables avec progression
+        document.getElementById('truncateAllBtn').addEventListener('click', function() {
+            startProgress('truncateAll', 'Vidage général', 'Début du vidage général de toutes les tables...');
+
+            fetch('@Url.Action("TruncateAllTables")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let detailsMessage = '';
+                    if (data.details && data.details.length > 0) {
+                        detailsMessage = '\n\nDétails:\n' + data.details.map(d => d.message).join('\n');
+                    }
+                    completeProgress(`✅ Vidage général terminé !\nTotal: ${data.totalAffectedRows} lignes supprimées${detailsMessage}`);
+                } else {
+                    failProgress('❌ ' + data.message);
+                }
+            })
+            .catch(error => {
+                failProgress('❌ Erreur : ' + error.message);
+            });
+        });
+
+        // Exécuter une requête SQL avec progression
         document.getElementById('queryForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -385,6 +583,8 @@
                 alert('❌ Veuillez saisir une requête SQL');
                 return;
             }
+
+            startProgress('query', 'Exécution de la requête', 'Exécution de la requête SQL...');
 
             fetch('@Url.Action("ExecuteQuery")', {
                 method: 'POST',
@@ -400,17 +600,53 @@
                 const resultText = document.getElementById('queryResultText');
                 
                 if (data.success) {
-                    resultText.textContent = JSON.stringify(data.data, null, 2);
-                    resultDiv.style.display = 'block';
-                    resultDiv.querySelector('.alert').className = 'alert alert-success';
+                    completeProgress('✅ Requête exécutée avec succès !');
+                    setTimeout(() => {
+                        resultText.textContent = JSON.stringify(data.data, null, 2);
+                        resultDiv.style.display = 'block';
+                        resultDiv.querySelector('.alert').className = 'alert alert-success';
+                    }, 1500);
                 } else {
-                    resultText.textContent = data.message;
-                    resultDiv.style.display = 'block';
-                    resultDiv.querySelector('.alert').className = 'alert alert-danger';
+                    failProgress('❌ ' + data.message);
                 }
             })
             .catch(error => {
-                alert('❌ Erreur : ' + error.message);
+                failProgress('❌ Erreur : ' + error.message);
+            });
+        });
+
+        // Créer une sauvegarde avec progression
+        document.getElementById('backupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const commentaire = document.getElementById('commentaire').value;
+            startProgress('backup', 'Création de la sauvegarde', 'Début de la sauvegarde...');
+
+            fetch('@Url.Action("Backup")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: `commentaire=${encodeURIComponent(commentaire)}`
+            })
+            .then(response => {
+                if (response.redirected) {
+                    completeProgress('✅ Sauvegarde créée avec succès !');
+                    setTimeout(() => {
+                        window.location.href = response.url;
+                    }, 1500);
+                } else {
+                    return response.text();
+                }
+            })
+            .then(data => {
+                if (data) {
+                    failProgress('❌ Erreur lors de la sauvegarde');
+                }
+            })
+            .catch(error => {
+                failProgress('❌ Erreur : ' + error.message);
             });
         });
     </script>

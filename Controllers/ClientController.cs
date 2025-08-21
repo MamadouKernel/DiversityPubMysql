@@ -485,7 +485,7 @@ namespace DiversityPub.Controllers
                     Nom = testClient.NomDirigeant,
                     Prenom = "",
                     Email = testClient.EmailContactPrincipal,
-                    MotDePasse = "Client123!", // Mot de passe en clair pour le test
+                    MotDePasse = BCrypt.Net.BCrypt.HashPassword("Client123!"), // Mot de passe hashé
                     Role = Models.enums.Role.Client,
                     Supprimer = 0
                 };
@@ -623,8 +623,8 @@ namespace DiversityPub.Controllers
                         else if (user.Role == Models.enums.Role.AgentTerrain)
                             defaultPassword = "AgentTerrain123!";
                         
-                        user.MotDePasse = defaultPassword;
-                        corrections.Add($"✅ Mot de passe corrigé pour {user.Email}: {defaultPassword}");
+                        user.MotDePasse = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
+                        corrections.Add($"✅ Mot de passe corrigé pour {user.Email}: {defaultPassword} (hashé)");
                     }
                 }
 
@@ -667,8 +667,8 @@ namespace DiversityPub.Controllers
 
                 foreach (var user in clientUsers)
                 {
-                    user.MotDePasse = "Client123!";
-                    results.Add($"✅ Mot de passe réinitialisé pour {user.Email}: Client123!");
+                    user.MotDePasse = BCrypt.Net.BCrypt.HashPassword("Client123!");
+                    results.Add($"✅ Mot de passe réinitialisé pour {user.Email}: Client123! (hashé)");
                 }
 
                 await _context.SaveChangesAsync();

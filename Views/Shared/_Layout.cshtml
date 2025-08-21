@@ -162,7 +162,7 @@
                                     </a>
                                 </li>
                             }
-                            @if (User.IsInRole("Admin") || User.IsInRole("ChefProjet"))
+                            @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ChefProjet"))
                             {
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle" href="#" id="gestionDropdown" role="button" data-bs-toggle="dropdown">
@@ -212,7 +212,7 @@
                                     </ul>
                                 </li>
                             }
-                            @if (User.IsInRole("Admin") || User.IsInRole("ChefProjet"))
+                            @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("ChefProjet"))
                             {
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle" href="#" id="validationDropdown" role="button" data-bs-toggle="dropdown">

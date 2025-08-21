@@ -318,7 +318,7 @@ namespace DiversityPub.Controllers
                         worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
                     }
                     
-                    // Données d'exemple
+                    // Données d'exemple (mots de passe en clair pour le template)
                     var sampleData = new[]
                     {
                         new { Nom = "Dupont", Prenom = "Jean", Email = "jean.dupont@exemple.com", Role = "AgentTerrain", MotDePasse = "MotDePasse123!", Telephone = "0123456789", Adresse = "", RaisonSociale = "", EmailPro = "jean.pro@exemple.com" },

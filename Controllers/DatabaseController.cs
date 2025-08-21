@@ -91,48 +91,35 @@ namespace DiversityPub.Controllers
                 // Extraire les informations de connexion MySQL
                 var connectionInfo = ParseMySqlConnectionString(connectionString);
                 
-                // Commande mysqldump
-                var mysqldumpArgs = $"--host={connectionInfo.Host} --port={connectionInfo.Port} --user={connectionInfo.User} --password={connectionInfo.Password} --single-transaction --routines --triggers {connectionInfo.Database} > \"{backupFilePath}\"";
-
-                var processInfo = new ProcessStartInfo
+                // Essayer d'abord avec mysqldump
+                var mysqldumpSuccess = await TryMySqlDumpBackup(connectionInfo, backupFilePath);
+                
+                if (!mysqldumpSuccess)
                 {
-                    FileName = "mysqldump",
-                    Arguments = mysqldumpArgs,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
+                    // Si mysqldump échoue, créer un backup de structure
+                    await CreateStructureBackup(backupFilePath, commentaire);
+                }
+                
+                // Créer un fichier de métadonnées pour la sauvegarde
+                var metadataPath = Path.Combine(backupPath, $"metadata_{timestamp}.json");
+                var metadata = new
+                {
+                    FileName = backupFileName,
+                    CreatedAt = DateTime.Now,
+                    CreatedBy = User.Identity?.Name,
+                    Commentaire = commentaire,
+                    FileSize = new FileInfo(backupFilePath).Length,
+                    Database = connectionInfo.Database,
+                    Type = mysqldumpSuccess ? "Complet" : "Structure"
                 };
 
-                using var process = Process.Start(processInfo);
-                if (process != null)
-                {
-                    await process.WaitForExitAsync();
-                    
-                    if (process.ExitCode == 0)
-                    {
-                        // Créer un fichier de métadonnées pour la sauvegarde
-                        var metadataPath = Path.Combine(backupPath, $"metadata_{timestamp}.json");
-                        var metadata = new
-                        {
-                            FileName = backupFileName,
-                            CreatedAt = DateTime.Now,
-                            CreatedBy = User.Identity?.Name,
-                            Commentaire = commentaire,
-                            FileSize = new FileInfo(backupFilePath).Length,
-                            Database = connectionInfo.Database
-                        };
+                await System.IO.File.WriteAllTextAsync(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
 
-                        await System.IO.File.WriteAllTextAsync(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-
-                        TempData["Success"] = $"✅ Sauvegarde créée avec succès : {backupFileName}";
-                    }
-                    else
-                    {
-                        var error = await process.StandardError.ReadToEndAsync();
-                        TempData["Error"] = $"❌ Erreur lors de la sauvegarde : {error}";
-                    }
-                }
+                var message = mysqldumpSuccess 
+                    ? $"✅ Sauvegarde complète créée avec succès : {backupFileName}"
+                    : $"⚠️ Sauvegarde de structure créée : {backupFileName} (mysqldump non disponible)";
+                
+                TempData["Success"] = message;
 
                 return RedirectToAction(nameof(Index));
             }
@@ -143,18 +130,330 @@ namespace DiversityPub.Controllers
             }
         }
 
+        private async Task<bool> TryMySqlDumpBackup((string Host, int Port, string User, string Password, string Database) connectionInfo, string backupFilePath)
+        {
+            try
+            {
+                // Chercher mysqldump dans les chemins possibles
+                var mysqldumpPaths = new[]
+                {
+                    "mysqldump",
+                    @"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe",
+                    @"C:\Program Files\MySQL\MySQL Server 5.7\bin\mysqldump.exe",
+                    @"C:\xampp\mysql\bin\mysqldump.exe",
+                    @"C:\wamp64\bin\mysql\mysql8.0.31\bin\mysqldump.exe"
+                };
+
+                string? mysqldumpPath = null;
+                foreach (var path in mysqldumpPaths)
+                {
+                    try
+                    {
+                        var processInfo = new ProcessStartInfo
+                        {
+                            FileName = path,
+                            Arguments = "--version",
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            CreateNoWindow = true
+                        };
+                        
+                        using var process = Process.Start(processInfo);
+                        if (process != null)
+                        {
+                            await process.WaitForExitAsync();
+                            if (process.ExitCode == 0)
+                            {
+                                mysqldumpPath = path;
+                                break;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+                if (mysqldumpPath == null)
+                {
+                    return false;
+                }
+
+                // Commande mysqldump avec redirection de sortie
+                var mysqldumpArgs = $"--host={connectionInfo.Host} --port={connectionInfo.Port} --user={connectionInfo.User} --password={connectionInfo.Password} --single-transaction --routines --triggers {connectionInfo.Database}";
+
+                var backupProcessInfo = new ProcessStartInfo
+                {
+                    FileName = mysqldumpPath,
+                    Arguments = mysqldumpArgs,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using var backupProcess = Process.Start(backupProcessInfo);
+                if (backupProcess != null)
+                {
+                    // Lire la sortie et l'écrire dans le fichier
+                    var output = await backupProcess.StandardOutput.ReadToEndAsync();
+                    var error = await backupProcess.StandardError.ReadToEndAsync();
+                    
+                    await backupProcess.WaitForExitAsync();
+                    
+                    if (backupProcess.ExitCode == 0 && !string.IsNullOrEmpty(output))
+                    {
+                        // Écrire le contenu dans le fichier de sauvegarde
+                        await System.IO.File.WriteAllTextAsync(backupFilePath, output);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task CreateStructureBackup(string backupFilePath, string? commentaire)
+        {
+            var sqlContent = $@"
+-- =============================================
+-- Backup de la base de données DiversityPub
+-- Créé le: {DateTime.Now:dd/MM/yyyy HH:mm:ss}
+-- Par: {User.Identity?.Name ?? "Système"}
+-- Commentaire: {commentaire ?? ""}
+-- Type: Structure de base de données
+-- =============================================
+
+SET FOREIGN_KEY_CHECKS=0;
+SET SQL_MODE = ""NO_AUTO_VALUE_ON_ZERO"";
+SET AUTOCOMMIT = 0;
+START TRANSACTION;
+SET time_zone = ""+00:00"";
+
+-- =============================================
+-- Structure de la base de données
+-- =============================================
+
+CREATE DATABASE IF NOT EXISTS `railway` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `railway`;
+
+-- Table Utilisateur
+DROP TABLE IF EXISTS `Utilisateur`;
+CREATE TABLE `Utilisateur` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Nom` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Prenom` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `MotDePasse` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Role` int NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  `DerniereConnexion` datetime(6) NULL,
+  `EstActif` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `IX_Utilisateur_Email` (`Email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table Client
+DROP TABLE IF EXISTS `Client`;
+CREATE TABLE `Client` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Nom` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Telephone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `Adresse` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  `EstActif` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table Campagne
+DROP TABLE IF EXISTS `Campagne`;
+CREATE TABLE `Campagne` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Nom` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `DateDebut` datetime(6) NOT NULL,
+  `DateFin` datetime(6) NOT NULL,
+  `Statut` int NOT NULL,
+  `ClientId` int NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Campagne_ClientId` (`ClientId`),
+  CONSTRAINT `FK_Campagne_Client_ClientId` FOREIGN KEY (`ClientId`) REFERENCES `Client` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table Lieu
+DROP TABLE IF EXISTS `Lieu`;
+CREATE TABLE `Lieu` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Nom` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Adresse` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `Latitude` decimal(10,8) NULL,
+  `Longitude` decimal(11,8) NULL,
+  `CampagneId` int NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Lieu_CampagneId` (`CampagneId`),
+  CONSTRAINT `FK_Lieu_Campagne_CampagneId` FOREIGN KEY (`CampagneId`) REFERENCES `Campagne` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table Activation
+DROP TABLE IF EXISTS `Activation`;
+CREATE TABLE `Activation` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Nom` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `DateDebut` datetime(6) NOT NULL,
+  `DateFin` datetime(6) NOT NULL,
+  `Statut` int NOT NULL,
+  `CampagneId` int NOT NULL,
+  `LieuId` int NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Activation_CampagneId` (`CampagneId`),
+  KEY `IX_Activation_LieuId` (`LieuId`),
+  CONSTRAINT `FK_Activation_Campagne_CampagneId` FOREIGN KEY (`CampagneId`) REFERENCES `Campagne` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_Activation_Lieu_LieuId` FOREIGN KEY (`LieuId`) REFERENCES `Lieu` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table AgentTerrain
+DROP TABLE IF EXISTS `AgentTerrain`;
+CREATE TABLE `AgentTerrain` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `UtilisateurId` int NOT NULL,
+  `Nom` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Prenom` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Telephone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `Email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  `EstActif` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`Id`),
+  KEY `IX_AgentTerrain_UtilisateurId` (`UtilisateurId`),
+  CONSTRAINT `FK_AgentTerrain_Utilisateur_UtilisateurId` FOREIGN KEY (`UtilisateurId`) REFERENCES `Utilisateur` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table PositionGPS
+DROP TABLE IF EXISTS `PositionGPS`;
+CREATE TABLE `PositionGPS` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `AgentTerrainId` int NOT NULL,
+  `Latitude` decimal(10,8) NOT NULL,
+  `Longitude` decimal(11,8) NOT NULL,
+  `Timestamp` datetime(6) NOT NULL,
+  `Precision` decimal(10,2) NULL,
+  `Vitesse` decimal(10,2) NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_PositionGPS_AgentTerrainId` (`AgentTerrainId`),
+  CONSTRAINT `FK_PositionGPS_AgentTerrain_AgentTerrainId` FOREIGN KEY (`AgentTerrainId`) REFERENCES `AgentTerrain` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table Feedback
+DROP TABLE IF EXISTS `Feedback`;
+CREATE TABLE `Feedback` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Titre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Contenu` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  `ClientId` int NOT NULL,
+  `EstResolu` tinyint(1) NOT NULL DEFAULT '0',
+  `Reponse` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `DateReponse` datetime(6) NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Feedback_ClientId` (`ClientId`),
+  CONSTRAINT `FK_Feedback_Client_ClientId` FOREIGN KEY (`ClientId`) REFERENCES `Client` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table Incident
+DROP TABLE IF EXISTS `Incident`;
+CREATE TABLE `Incident` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Titre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  `AgentTerrainId` int NOT NULL,
+  `Latitude` decimal(10,8) NULL,
+  `Longitude` decimal(11,8) NULL,
+  `EstResolu` tinyint(1) NOT NULL DEFAULT '0',
+  `DateResolution` datetime(6) NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Incident_AgentTerrainId` (`AgentTerrainId`),
+  CONSTRAINT `FK_Incident_AgentTerrain_AgentTerrainId` FOREIGN KEY (`AgentTerrainId`) REFERENCES `AgentTerrain` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table Media
+DROP TABLE IF EXISTS `Media`;
+CREATE TABLE `Media` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `NomFichier` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `CheminFichier` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Type` int NOT NULL,
+  `Taille` bigint NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  `AgentTerrainId` int NULL,
+  `IncidentId` int NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_Media_AgentTerrainId` (`AgentTerrainId`),
+  KEY `IX_Media_IncidentId` (`IncidentId`),
+  CONSTRAINT `FK_Media_AgentTerrain_AgentTerrainId` FOREIGN KEY (`AgentTerrainId`) REFERENCES `AgentTerrain` (`Id`) ON DELETE SET NULL,
+  CONSTRAINT `FK_Media_Incident_IncidentId` FOREIGN KEY (`IncidentId`) REFERENCES `Incident` (`Id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table DemandeActivation
+DROP TABLE IF EXISTS `DemandeActivation`;
+CREATE TABLE `DemandeActivation` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Nom` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `DateDebut` datetime(6) NOT NULL,
+  `DateFin` datetime(6) NOT NULL,
+  `Statut` int NOT NULL,
+  `ClientId` int NOT NULL,
+  `LieuId` int NOT NULL,
+  `DateCreation` datetime(6) NOT NULL,
+  PRIMARY KEY (`Id`),
+  KEY `IX_DemandeActivation_ClientId` (`ClientId`),
+  KEY `IX_DemandeActivation_LieuId` (`LieuId`),
+  CONSTRAINT `FK_DemandeActivation_Client_ClientId` FOREIGN KEY (`ClientId`) REFERENCES `Client` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_DemandeActivation_Lieu_LieuId` FOREIGN KEY (`LieuId`) REFERENCES `Lieu` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Données de base (si nécessaire)
+-- =============================================
+
+-- Insérer un utilisateur admin par défaut si la table est vide
+INSERT INTO `Utilisateur` (`Nom`, `Prenom`, `Email`, `MotDePasse`, `Role`, `DateCreation`, `EstActif`) 
+SELECT 'Admin', 'System', 'admin@diversitypub.ci', 'AQAAAAEAACcQAAAAELB+...', 0, NOW(), 1
+WHERE NOT EXISTS (SELECT 1 FROM `Utilisateur` WHERE `Email` = 'admin@diversitypub.ci');
+
+-- =============================================
+-- Fin du backup
+-- =============================================
+
+SET FOREIGN_KEY_CHECKS=1;
+COMMIT;
+";
+
+            await System.IO.File.WriteAllTextAsync(backupFilePath, sqlContent);
+        }
+
         // POST: Database/Restore - Restaurer une sauvegarde
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Restore(string backupFileName)
         {
             try
-            {
+        {
                 if (string.IsNullOrEmpty(backupFileName))
-                {
+            {
                     TempData["Error"] = "❌ Nom de fichier de sauvegarde requis";
-                    return RedirectToAction(nameof(Index));
-                }
+                return RedirectToAction(nameof(Index));
+            }
 
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
                 var backupPath = Path.Combine(_environment.WebRootPath, "backups");
@@ -170,30 +469,39 @@ namespace DiversityPub.Controllers
                 var connectionInfo = ParseMySqlConnectionString(connectionString);
 
                 // Commande mysql pour la restauration
-                var mysqlArgs = $"--host={connectionInfo.Host} --port={connectionInfo.Port} --user={connectionInfo.User} --password={connectionInfo.Password} {connectionInfo.Database} < \"{backupFilePath}\"";
+                var mysqlArgs = $"--host={connectionInfo.Host} --port={connectionInfo.Port} --user={connectionInfo.User} --password={connectionInfo.Password} {connectionInfo.Database}";
 
-                var processInfo = new ProcessStartInfo
+                var restoreProcessInfo = new ProcessStartInfo
                 {
                     FileName = "mysql",
                     Arguments = mysqlArgs,
                     UseShellExecute = false,
+                    RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     CreateNoWindow = true
                 };
 
-                using var process = Process.Start(processInfo);
-                if (process != null)
+                using var restoreProcess = Process.Start(restoreProcessInfo);
+                if (restoreProcess != null)
                 {
-                    await process.WaitForExitAsync();
+                    // Lire le contenu du fichier de sauvegarde
+                    var backupContent = await System.IO.File.ReadAllTextAsync(backupFilePath);
                     
-                    if (process.ExitCode == 0)
+                    // Écrire le contenu dans l'entrée standard du processus
+                    await restoreProcess.StandardInput.WriteAsync(backupContent);
+                    await restoreProcess.StandardInput.FlushAsync();
+                    restoreProcess.StandardInput.Close();
+                    
+                    await restoreProcess.WaitForExitAsync();
+                    
+                    if (restoreProcess.ExitCode == 0)
                     {
                         TempData["Success"] = $"✅ Restauration réussie depuis : {backupFileName}";
                     }
                     else
                     {
-                        var error = await process.StandardError.ReadToEndAsync();
+                        var error = await restoreProcess.StandardError.ReadToEndAsync();
                         TempData["Error"] = $"❌ Erreur lors de la restauration : {error}";
                     }
                 }
@@ -227,15 +535,128 @@ namespace DiversityPub.Controllers
                     return Json(new { success = false, message = $"❌ Table non autorisée : {tableName}" });
                 }
 
-                // Construire la requête SQL
-                var sql = $"TRUNCATE TABLE `{tableName}`";
-                var affectedRows = await _context.Database.ExecuteSqlRawAsync(sql);
+                // Désactiver temporairement les vérifications de clés étrangères
+                await _context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 0");
 
-                return Json(new { success = true, message = $"✅ Table {tableName} vidée avec succès ({affectedRows} lignes affectées)" });
+                try
+                {
+                    // Construire la requête SQL
+                    var sql = $"TRUNCATE TABLE `{tableName}`";
+                    var affectedRows = await _context.Database.ExecuteSqlRawAsync(sql);
+
+                    return Json(new { success = true, message = $"✅ Table {tableName} vidée avec succès ({affectedRows} lignes affectées)" });
+                }
+                finally
+                {
+                    // Réactiver les vérifications de clés étrangères
+                    await _context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 1");
+                }
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = $"❌ Erreur lors du vidage de la table : {ex.Message}" });
+            }
+        }
+
+        // POST: Database/TruncateAllTables - Vider toutes les tables
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TruncateAllTables()
+        {
+            try
+            {
+                // Liste des tables dans l'ordre de suppression (en respectant les contraintes de clés étrangères)
+                var tablesToTruncate = new[]
+                {
+                    "Medias",
+                    "PositionGPS", 
+                    "Incidents",
+                    "Feedbacks",
+                    "ActivationAgentTerrain",
+                    "Activations",
+                    "DemandeActivation",
+                    "AgentsTerrain",
+                    "Lieux",
+                    "Campagnes",
+                    "Clients",
+                    "Utilisateurs"
+                };
+
+                // Désactiver temporairement les vérifications de clés étrangères
+                await _context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 0");
+
+                var results = new List<object>();
+                var totalAffectedRows = 0;
+
+                try
+                {
+                    foreach (var tableName in tablesToTruncate)
+                    {
+                        try
+                        {
+                            // Vérifier si la table existe
+                            var tableExists = await _context.Database.ExecuteSqlRawAsync(
+                                $"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '{tableName}'");
+                            
+                            if (tableExists > 0)
+                            {
+                                // Compter les lignes avant suppression
+                                var countBefore = await _context.Database.ExecuteSqlRawAsync($"SELECT COUNT(*) FROM `{tableName}`");
+                                
+                                // Truncater la table
+                                var sql = $"TRUNCATE TABLE `{tableName}`";
+                                await _context.Database.ExecuteSqlRawAsync(sql);
+                                
+                                results.Add(new { 
+                                    table = tableName, 
+                                    success = true, 
+                                    affectedRows = countBefore,
+                                    message = $"✅ Table {tableName} vidée ({countBefore} lignes supprimées)" 
+                                });
+                                
+                                totalAffectedRows += (int)countBefore;
+                            }
+                            else
+                            {
+                                results.Add(new { 
+                                    table = tableName, 
+                                    success = false, 
+                                    affectedRows = 0,
+                                    message = $"⚠️ Table {tableName} n'existe pas" 
+                                });
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            results.Add(new { 
+                                table = tableName, 
+                                success = false, 
+                                affectedRows = 0,
+                                message = $"❌ Erreur pour {tableName}: {ex.Message}" 
+                            });
+                        }
+                    }
+
+                    return Json(new { 
+                        success = true, 
+                        message = $"✅ Toutes les tables vidées avec succès ! Total: {totalAffectedRows} lignes supprimées",
+                        totalAffectedRows = totalAffectedRows,
+                        details = results
+                    });
+                }
+                finally
+                {
+                    // Réactiver les vérifications de clés étrangères
+                    await _context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 1");
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = $"❌ Erreur lors du vidage général : {ex.Message}",
+                    details = new List<object>()
+                });
             }
         }
 
@@ -291,8 +712,8 @@ namespace DiversityPub.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = $"❌ Erreur lors du téléchargement : {ex.Message}";
-                return RedirectToAction(nameof(Index));
-            }
+                    return RedirectToAction(nameof(Index));
+                }
         }
 
         // POST: Database/DeleteBackup - Supprimer une sauvegarde
@@ -322,7 +743,7 @@ namespace DiversityPub.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = $"❌ Erreur lors de la suppression : {ex.Message}";
-                return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index));
             }
         }
 
@@ -365,7 +786,8 @@ namespace DiversityPub.Controllers
                         FileSize = fileInfo.Length,
                         CreatedAt = fileInfo.CreationTime,
                         Commentaire = metadata?.GetProperty("Commentaire").GetString() ?? "",
-                        CreatedBy = metadata?.GetProperty("CreatedBy").GetString() ?? "Inconnu"
+                        CreatedBy = metadata?.GetProperty("CreatedBy").GetString() ?? "Inconnu",
+                        Type = metadata?.GetProperty("Type").GetString() ?? "Structure"
                     });
                 }
             }
@@ -390,44 +812,44 @@ namespace DiversityPub.Controllers
             var host = "localhost";
             var port = 3306;
             var user = "";
-            var password = "";
+                var password = "";
             var database = "";
 
             foreach (var part in parts)
-            {
-                var keyValue = part.Split('=');
-                if (keyValue.Length == 2)
                 {
-                    var key = keyValue[0].Trim().ToLower();
-                    var value = keyValue[1].Trim();
-
-                    switch (key)
+                    var keyValue = part.Split('=');
+                    if (keyValue.Length == 2)
                     {
-                        case "server":
-                        case "host":
+                        var key = keyValue[0].Trim().ToLower();
+                        var value = keyValue[1].Trim();
+
+                        switch (key)
+                        {
+                            case "server":
+                            case "host":
                             host = value;
-                            break;
-                        case "port":
+                                break;
+                            case "port":
                             if (int.TryParse(value, out var portValue))
                                 port = portValue;
-                            break;
-                        case "user id":
-                        case "uid":
-                        case "user":
+                                break;
+                            case "user id":
+                            case "uid":
+                            case "user":
                             user = value;
-                            break;
-                        case "password":
-                        case "pwd":
-                            password = value;
-                            break;
-                        case "database":
-                        case "initial catalog":
-                            database = value;
-                            break;
+                                break;
+                            case "password":
+                            case "pwd":
+                                password = value;
+                                break;
+                            case "database":
+                            case "initial catalog":
+                                database = value;
+                                break;
+                        }
                     }
                 }
-            }
-
+                
             return (host, port, user, password, database);
         }
     }

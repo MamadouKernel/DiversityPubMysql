@@ -285,6 +285,44 @@ namespace DiversityPub.Controllers
             }
         }
 
+        // GET: Auth/DebugUsers - Méthode de debug pour vérifier les utilisateurs en base
+        public async Task<IActionResult> DebugUsers()
+        {
+            try
+            {
+                var allUsers = await _context.Utilisateurs
+                    .Where(u => u.Supprimer == 0)
+                    .ToListAsync();
+
+                var result = new List<string>
+                {
+                    $"=== DEBUG UTILISATEURS ===",
+                    $"Total utilisateurs actifs: {allUsers.Count}",
+                    ""
+                };
+
+                foreach (var user in allUsers)
+                {
+                    var passwordInfo = user.MotDePasse.StartsWith("$2a$") || user.MotDePasse.StartsWith("$2b$") 
+                        ? "Hashé BCrypt" 
+                        : "En clair";
+                    
+                    result.Add($"👤 {user.Email}");
+                    result.Add($"   Nom: {user.Nom} {user.Prenom}");
+                    result.Add($"   Rôle: {user.Role}");
+                    result.Add($"   Mot de passe: {passwordInfo}");
+                    result.Add($"   Supprimé: {user.Supprimer}");
+                    result.Add("");
+                }
+
+                return Content(string.Join("\n", result));
+            }
+            catch (Exception ex)
+            {
+                return Content($"❌ Erreur: {ex.Message}");
+            }
+        }
+
         // GET: Auth/DebugLogin - Méthode de debug pour tester la connexion
         public async Task<IActionResult> DebugLogin(string email, string password)
         {
