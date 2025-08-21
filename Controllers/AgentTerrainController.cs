@@ -290,8 +290,8 @@ namespace DiversityPub.Controllers
                 
                 await _context.SaveChangesAsync();
                 
-                // Mettre à jour le statut de la campagne automatiquement
-                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
+                // Note: Pas besoin d'appeler le service ici car la logique manuelle est suffisante
+                // et évite les conflits avec la logique automatique du service
 
                 return Json(new { 
                     success = true, 
@@ -396,8 +396,8 @@ namespace DiversityPub.Controllers
                 
                 await _context.SaveChangesAsync();
                 
-                // Mettre à jour le statut de la campagne automatiquement
-                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
+                // Note: Pas besoin d'appeler le service ici car la logique manuelle est suffisante
+                // et évite les conflits avec la logique automatique du service
 
                 return Json(new { 
                     success = true, 
@@ -469,8 +469,8 @@ namespace DiversityPub.Controllers
                 
                 await _context.SaveChangesAsync();
                 
-                // Mettre à jour le statut de la campagne automatiquement
-                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
+                // Note: Pas besoin d'appeler le service ici car la logique manuelle est suffisante
+                // et évite les conflits avec la logique automatique du service
 
                 return Json(new { 
                     success = true, 
@@ -537,8 +537,8 @@ namespace DiversityPub.Controllers
                 
                 await _context.SaveChangesAsync();
                 
-                // Mettre à jour le statut de la campagne automatiquement
-                await _campagneStatusService.UpdateCampagneStatusAsync(activation.CampagneId);
+                // Note: Pas besoin d'appeler le service ici car la logique manuelle est suffisante
+                // et évite les conflits avec la logique automatique du service
 
                 return Json(new { 
                     success = true, 
