@@ -220,7 +220,7 @@ try
                     Nom = "Admin",
                     Prenom = "Standard",
                     Email = "admin@diversitypub.ci",
-                    MotDePasse = BCrypt.Net.BCrypt.HashPassword("Admin2025!"),
+                    MotDePasse = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
                     Role = DiversityPub.Models.enums.Role.Admin,
                     Supprimer = 0
                 };
