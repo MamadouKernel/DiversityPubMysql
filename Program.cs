@@ -229,7 +229,7 @@ try
                 await context.SaveChangesAsync();
                 Console.WriteLine("✅ Admin créé avec succès");
                 Console.WriteLine("📧 Email: admin@diversitypub.ci");
-                Console.WriteLine("🔑 Mot de passe: Admin2025!");
+                Console.WriteLine("🔑 Mot de passe: Admin123!");
             }
             else
             {
