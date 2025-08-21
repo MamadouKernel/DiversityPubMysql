@@ -8,7 +8,7 @@ using System.Text;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SuperAdmin")]
     public class DatabaseController : Controller
     {
         private readonly DiversityPubDbContext _context;

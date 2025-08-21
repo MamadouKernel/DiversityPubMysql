@@ -3,6 +3,7 @@ using System;
 using DiversityPub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DiversityPub.Migrations
 {
     [DbContext(typeof(DiversityPubDbContext))]
-    partial class DiversityPubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250821165908_AddSuperAdminRole")]
+    partial class AddSuperAdminRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

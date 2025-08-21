@@ -3,6 +3,8 @@ using DiversityPub.Data;
 using DiversityPub.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using DiversityPub.Models;
+using DiversityPub.Models.enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -166,32 +168,85 @@ app.MapGet("/db-test", async (IServiceProvider serviceProvider) =>
 // Endpoint de test simple
 app.MapGet("/test", () => "Application is running!");
 
-// Appliquer les migrations automatiquement en production (conditionnellement)
-if (app.Environment.IsProduction())
+// Appliquer les migrations et créer les utilisateurs par défaut
+try
 {
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        using (var scope = app.Services.CreateScope())
+        var context = scope.ServiceProvider.GetService<DiversityPubDbContext>();
+        if (context != null)
         {
-            var context = scope.ServiceProvider.GetService<DiversityPubDbContext>();
-            if (context != null)
+            Console.WriteLine("🔄 Tentative de connexion à la base de données...");
+            context.Database.Migrate();
+            Console.WriteLine("✅ Migrations appliquées avec succès");
+
+            // Créer le SuperAdmin par défaut
+            var superAdminExists = await context.Utilisateurs
+                .AnyAsync(u => u.Role == DiversityPub.Models.enums.Role.SuperAdmin);
+            
+            if (!superAdminExists)
             {
-                Console.WriteLine("🔄 Tentative de connexion à la base de données...");
-                context.Database.Migrate();
-                Console.WriteLine("✅ Migrations appliquées avec succès");
+                var superAdmin = new DiversityPub.Models.Utilisateur
+                {
+                    Id = Guid.NewGuid(),
+                    Nom = "Super",
+                    Prenom = "Admin",
+                    Email = "superadmin@diversitypub.ci",
+                    MotDePasse = BCrypt.Net.BCrypt.HashPassword("SuperAdmin2025!"),
+                    Role = DiversityPub.Models.enums.Role.SuperAdmin,
+                    Supprimer = 0
+                };
+                
+                context.Utilisateurs.Add(superAdmin);
+                await context.SaveChangesAsync();
+                Console.WriteLine("✅ SuperAdmin créé avec succès");
+                Console.WriteLine("📧 Email: superadmin@diversitypub.ci");
+                Console.WriteLine("🔑 Mot de passe: SuperAdmin2025!");
             }
             else
             {
-                Console.WriteLine("⚠️ Pas de DbContext disponible pour les migrations");
+                Console.WriteLine("ℹ️ SuperAdmin existe déjà");
+            }
+
+            // Créer l'Admin par défaut s'il n'existe pas
+            var adminExists = await context.Utilisateurs
+                .AnyAsync(u => u.Role == DiversityPub.Models.enums.Role.Admin);
+            
+            if (!adminExists)
+            {
+                var admin = new DiversityPub.Models.Utilisateur
+                {
+                    Id = Guid.NewGuid(),
+                    Nom = "Admin",
+                    Prenom = "Standard",
+                    Email = "admin@diversitypub.ci",
+                    MotDePasse = BCrypt.Net.BCrypt.HashPassword("Admin2025!"),
+                    Role = DiversityPub.Models.enums.Role.Admin,
+                    Supprimer = 0
+                };
+                
+                context.Utilisateurs.Add(admin);
+                await context.SaveChangesAsync();
+                Console.WriteLine("✅ Admin créé avec succès");
+                Console.WriteLine("📧 Email: admin@diversitypub.ci");
+                Console.WriteLine("🔑 Mot de passe: Admin2025!");
+            }
+            else
+            {
+                Console.WriteLine("ℹ️ Admin existe déjà");
             }
         }
+        else
+        {
+            Console.WriteLine("⚠️ Pas de DbContext disponible");
+        }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Erreur lors de l'application des migrations: {ex.Message}");
-        Console.WriteLine($"📋 Stack trace: {ex.StackTrace}");
-        Console.WriteLine("⚠️ L'application continue sans les migrations...");
-    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Erreur lors de l'initialisation de la base de données: {ex.Message}");
+    Console.WriteLine($"📋 Stack trace: {ex.StackTrace}");
+    Console.WriteLine("⚠️ L'application continue sans l'initialisation...");
 }
 
 Console.WriteLine("🎉 Application configurée, démarrage...");

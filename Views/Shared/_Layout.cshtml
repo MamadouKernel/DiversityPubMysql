@@ -175,16 +175,19 @@
                                         <li><a class="dropdown-item" href="@Url.Action("Index", "Campagne")">
                                             <i class="fas fa-bullhorn"></i> Campagnes
                                         </a></li>
-                                        @if (User.IsInRole("Admin"))
+                                                                                @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
                                         {
                                             <li><hr class="dropdown-divider"></li>
-                                                                                    <li><a class="dropdown-item" href="@Url.Action("Index", "Utilisateur")">
-                                            <i class="fas fa-users"></i> Utilisateurs
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="@Url.Action("Index", "Database")">
-                                            <i class="fas fa-database"></i> Administration Base de Données
-                                        </a></li>
+                                            <li><a class="dropdown-item" href="@Url.Action("Index", "Utilisateur")">
+                                                <i class="fas fa-users"></i> Utilisateurs
+                                            </a></li>
+                                        }
+                                        @if (User.IsInRole("SuperAdmin"))
+                                        {
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="@Url.Action("Index", "Database")">
+                                                <i class="fas fa-database"></i> Administration Base de Données
+                                            </a></li>
                                         }
                                     </ul>
                                 </li>
