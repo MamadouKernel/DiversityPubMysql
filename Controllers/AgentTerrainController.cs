@@ -21,6 +21,18 @@ namespace DiversityPub.Controllers
             _context = context;
             _campagneStatusService = campagneStatusService;
         }
+        
+        // Méthode helper pour obtenir les extensions autorisées selon le type de média
+        private List<string> GetAllowedExtensions(DiversityPub.Models.enums.TypeMedia typeMedia)
+        {
+            return typeMedia switch
+            {
+                DiversityPub.Models.enums.TypeMedia.Photo => new List<string> { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" },
+                DiversityPub.Models.enums.TypeMedia.Video => new List<string> { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm" },
+                DiversityPub.Models.enums.TypeMedia.Document => new List<string> { ".pdf", ".doc", ".docx", ".txt", ".xls", ".xlsx", ".ppt", ".pptx" },
+                _ => new List<string> { ".jpg", ".jpeg", ".png", ".gif", ".mp4", ".avi", ".pdf", ".doc", ".docx", ".txt", ".xls", ".xlsx" }
+            };
+        }
 
         // GET: AgentTerrain
         public async Task<IActionResult> Index()
@@ -195,6 +207,8 @@ namespace DiversityPub.Controllers
             
             return activation?.ResponsableId == agentId;
         }
+        
+
 
         // POST: AgentTerrain/DemarrerActivation
         [HttpPost]
@@ -942,6 +956,29 @@ namespace DiversityPub.Controllers
                 if (fichier == null || fichier.Length == 0)
                 {
                     ModelState.AddModelError("fichier", "Un fichier doit être sélectionné.");
+                }
+                else
+                {
+                    // Validation du type de fichier selon le type de média
+                    if (Enum.TryParse<DiversityPub.Models.enums.TypeMedia>(Type, out var parsedTypeMedia))
+                    {
+                        var allowedExtensions = GetAllowedExtensions(parsedTypeMedia);
+                        var fileExtension = Path.GetExtension(fichier.FileName).ToLowerInvariant();
+                        
+                        Console.WriteLine($"=== VALIDATION TYPE FICHIER ===");
+                        Console.WriteLine($"Type média: {parsedTypeMedia}");
+                        Console.WriteLine($"Extension fichier: {fileExtension}");
+                        Console.WriteLine($"Extensions autorisées: {string.Join(", ", allowedExtensions)}");
+                        
+                        if (!allowedExtensions.Contains(fileExtension))
+                        {
+                            ModelState.AddModelError("fichier", $"Type de fichier non autorisé pour {parsedTypeMedia}. Extensions autorisées: {string.Join(", ", allowedExtensions)}");
+                        }
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("fichier", "Type de média invalide pour la validation du fichier.");
+                    }
                 }
                 
                 if (!ModelState.IsValid)

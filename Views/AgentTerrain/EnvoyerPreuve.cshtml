@@ -579,25 +579,81 @@
         files.forEach((file, index) => {
             totalSize += file.size;
             const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+            const isDocument = file.type.includes('pdf') || file.type.includes('document') || 
+                              file.name.toLowerCase().endsWith('.pdf') || 
+                              file.name.toLowerCase().endsWith('.doc') || 
+                              file.name.toLowerCase().endsWith('.docx') ||
+                              file.name.toLowerCase().endsWith('.xls') ||
+                              file.name.toLowerCase().endsWith('.xlsx') ||
+                              file.name.toLowerCase().endsWith('.txt');
             const fileId = `file-${index}`;
+            
+            // Déterminer l'icône selon le type de fichier
+            let fileIcon = 'file';
+            let fileColor = 'text-primary';
+            
+            if (isImage) {
+                fileIcon = 'image';
+                fileColor = 'text-success';
+            } else if (isVideo) {
+                fileIcon = 'video';
+                fileColor = 'text-danger';
+            } else if (isDocument) {
+                fileIcon = 'file-alt';
+                fileColor = 'text-warning';
+            }
+            
+            // Aperçu spécial selon le type
+            let previewHtml = '';
+            if (isImage) {
+                previewHtml = `<div class="mt-2"><img id="${fileId}" class="img-thumbnail" style="max-height: 100px; max-width: 150px; object-fit: cover;"></div>`;
+            } else if (isVideo) {
+                previewHtml = `
+                    <div class="mt-2">
+                        <video id="${fileId}" class="img-thumbnail" style="max-height: 100px; max-width: 150px;" controls>
+                            <source src="" type="${file.type}">
+                            Votre navigateur ne supporte pas la lecture vidéo.
+                        </video>
+                    </div>
+                `;
+            } else if (isDocument) {
+                previewHtml = `
+                    <div class="mt-2 p-2 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-${fileIcon} ${fileColor} me-2"></i>
+                            <div>
+                                <small class="text-muted">Document</small>
+                                <div class="fw-bold">${file.name}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
             
             filesHtml += `
                 <div class="selected-file mb-3 p-3 border rounded" data-file-index="${index}">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="file-info">
                             <div class="d-flex align-items-center">
-                                <i class="fas fa-${isImage ? 'image' : file.type.includes('video') ? 'video' : 'file'} me-2 text-primary"></i>
+                                <i class="fas fa-${fileIcon} ${fileColor} me-2"></i>
                                 <div>
                                     <div class="fw-bold">${file.name}</div>
                                     <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                                    <br><small class="text-info">${file.type || 'Type inconnu'}</small>
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile(${index})">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="file-actions">
+                            <button type="button" class="btn btn-outline-info btn-sm me-1" onclick="previewFile(${index})" title="Aperçu">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile(${index})" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
-                    ${isImage ? `<div class="mt-2"><img id="${fileId}" class="img-thumbnail" style="max-height: 100px; max-width: 150px;"></div>` : ''}
+                    ${previewHtml}
                 </div>
             `;
         });
@@ -626,9 +682,18 @@
             </div>
         `;
         
-        // Charger les prévisualisations d'images
+        // Charger les prévisualisations
         files.forEach((file, index) => {
             if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(`file-${index}`);
+                    if (preview) {
+                        preview.src = e.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type.startsWith('video/')) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const preview = document.getElementById(`file-${index}`);
@@ -667,6 +732,154 @@
         const fileInput = document.getElementById('fichier');
         fileInput.value = '';
         clearFileDisplay();
+    }
+    
+    // Fonction pour afficher un aperçu en plein écran
+    function previewFile(index) {
+        const fileInput = document.getElementById('fichier');
+        const files = Array.from(fileInput.files);
+        const file = files[index];
+        
+        if (!file) return;
+        
+        console.log('👁️ Aperçu du fichier:', file.name, file.type);
+        
+        // Créer la modal d'aperçu
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+        modal.style.zIndex = '10000';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.flexDirection = 'column';
+        
+        const closeButton = document.createElement('button');
+        closeButton.innerHTML = '❌ Fermer';
+        closeButton.style.position = 'absolute';
+        closeButton.style.top = '20px';
+        closeButton.style.right = '20px';
+        closeButton.style.padding = '10px 20px';
+        closeButton.style.backgroundColor = '#dc3545';
+        closeButton.style.color = 'white';
+        closeButton.style.border = 'none';
+        closeButton.style.borderRadius = '8px';
+        closeButton.style.cursor = 'pointer';
+        closeButton.style.zIndex = '10001';
+        
+        const content = document.createElement('div');
+        content.style.maxWidth = '90%';
+        content.style.maxHeight = '80%';
+        content.style.overflow = 'auto';
+        content.style.backgroundColor = 'white';
+        content.style.borderRadius = '8px';
+        content.style.padding = '20px';
+        content.style.position = 'relative';
+        
+        const title = document.createElement('h4');
+        title.textContent = file.name;
+        title.style.marginBottom = '15px';
+        title.style.color = '#333';
+        
+        content.appendChild(title);
+        
+        // Aperçu selon le type de fichier
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '70vh';
+            img.style.objectFit = 'contain';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            content.appendChild(img);
+        } else if (file.type.startsWith('video/')) {
+            const video = document.createElement('video');
+            video.style.maxWidth = '100%';
+            video.style.maxHeight = '70vh';
+            video.controls = true;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                video.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            content.appendChild(video);
+        } else {
+            // Pour les documents, afficher les informations
+            const info = document.createElement('div');
+            info.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                    <h5>Document: ${file.name}</h5>
+                    <p><strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p><strong>Type:</strong> ${file.type || 'Type inconnu'}</p>
+                    <p><strong>Dernière modification:</strong> ${new Date(file.lastModified).toLocaleString()}</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Les documents ne peuvent pas être prévisualisés directement dans le navigateur.
+                        <br>Ils seront téléchargeables après l'envoi.
+                    </div>
+                </div>
+            `;
+            content.appendChild(info);
+        }
+        
+        // Ajouter les informations du fichier
+        const fileInfo = document.createElement('div');
+        fileInfo.style.marginTop = '15px';
+        fileInfo.style.paddingTop = '15px';
+        fileInfo.style.borderTop = '1px solid #eee';
+        fileInfo.style.fontSize = '14px';
+        fileInfo.style.color = '#666';
+        fileInfo.innerHTML = `
+            <div class="row">
+                <div class="col-6">
+                    <strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB
+                </div>
+                <div class="col-6">
+                    <strong>Type:</strong> ${file.type || 'Type inconnu'}
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <strong>Dernière modification:</strong> ${new Date(file.lastModified).toLocaleString()}
+                </div>
+            </div>
+        `;
+        content.appendChild(fileInfo);
+        
+        modal.appendChild(closeButton);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+        
+        // Fermer la modal
+        closeButton.onclick = () => {
+            document.body.removeChild(modal);
+        };
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        };
+        
+        // Fermer avec la touche Échap
+        document.addEventListener('keydown', function closeOnEscape(e) {
+            if (e.key === 'Escape') {
+                document.body.removeChild(modal);
+                document.removeEventListener('keydown', closeOnEscape);
+            }
+        });
     }
     
     function clearFile() {
