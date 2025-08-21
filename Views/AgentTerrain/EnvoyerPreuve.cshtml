@@ -397,6 +397,17 @@
                         Appuyez sur "Prendre une photo" pour utiliser votre appareil photo
                     </small>
                 </div>
+                <div class="camera-help mt-2" id="cameraHelp" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb"></i> Comment prendre une photo :</h6>
+                        <ul class="mb-0">
+                            <li>Cliquez sur "📷 Prendre une photo"</li>
+                            <li>Autorisez l'accès à la caméra si demandé</li>
+                            <li>Cliquez sur "📸 Prendre la photo" pour capturer</li>
+                            <li>Cliquez sur "❌ Fermer" pour annuler</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
             <input type="file" id="fichier" name="fichiers" class="form-control" 
                    accept="image/*,video/*,.pdf,.doc,.docx,.txt" multiple style="display: none;" required />
@@ -688,6 +699,16 @@
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const isAndroid = /Android/.test(navigator.userAgent);
         
+        console.log('📱 Détection appareil:', { isMobile, isIOS, isAndroid });
+        
+        // Essayer d'abord l'API MediaDevices moderne
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            console.log('📹 Tentative avec MediaDevices API...');
+            openCameraWithMediaDevices();
+            return;
+        }
+        
+        // Fallback vers les inputs file avec capture
         let cameraInput;
         
         // Choisir le bon input selon la plateforme
@@ -707,8 +728,104 @@
             cameraInput = document.getElementById('fichierCamera');
         }
         
-        console.log('Ouverture input caméra:', cameraInput.id);
-        cameraInput.click();
+        if (cameraInput) {
+            console.log('📷 Ouverture input caméra:', cameraInput.id);
+            cameraInput.click();
+        } else {
+            console.error('❌ Aucun input caméra trouvé');
+            alert('Impossible d\'accéder à la caméra. Veuillez sélectionner un fichier manuellement.');
+        }
+    }
+    
+    // Nouvelle fonction pour utiliser l'API MediaDevices
+    function openCameraWithMediaDevices() {
+        const video = document.createElement('video');
+        video.style.position = 'fixed';
+        video.style.top = '0';
+        video.style.left = '0';
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.zIndex = '9999';
+        video.style.backgroundColor = 'black';
+        video.autoplay = true;
+        video.muted = true;
+        
+        const canvas = document.createElement('canvas');
+        const captureButton = document.createElement('button');
+        captureButton.textContent = '📸 Prendre la photo';
+        captureButton.style.position = 'fixed';
+        captureButton.style.bottom = '20px';
+        captureButton.style.left = '50%';
+        captureButton.style.transform = 'translateX(-50%)';
+        captureButton.style.zIndex = '10000';
+        captureButton.style.padding = '15px 30px';
+        captureButton.style.fontSize = '18px';
+        captureButton.style.backgroundColor = '#28a745';
+        captureButton.style.color = 'white';
+        captureButton.style.border = 'none';
+        captureButton.style.borderRadius = '8px';
+        captureButton.style.cursor = 'pointer';
+        
+        const closeButton = document.createElement('button');
+        closeButton.textContent = '❌ Fermer';
+        closeButton.style.position = 'fixed';
+        closeButton.style.top = '20px';
+        closeButton.style.right = '20px';
+        closeButton.style.zIndex = '10000';
+        closeButton.style.padding = '10px 20px';
+        closeButton.style.backgroundColor = '#dc3545';
+        closeButton.style.color = 'white';
+        closeButton.style.border = 'none';
+        closeButton.style.borderRadius = '8px';
+        closeButton.style.cursor = 'pointer';
+        
+        document.body.appendChild(video);
+        document.body.appendChild(captureButton);
+        document.body.appendChild(closeButton);
+        
+        // Démarrer la caméra
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment', // Caméra arrière sur mobile
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            } 
+        })
+        .then(stream => {
+            video.srcObject = stream;
+            console.log('📹 Caméra démarrée avec succès');
+        })
+        .catch(err => {
+            console.error('❌ Erreur caméra:', err);
+            alert('Impossible d\'accéder à la caméra. Erreur: ' + err.message);
+            closeCamera();
+        });
+        
+        // Prendre la photo
+        captureButton.onclick = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            canvas.toBlob(blob => {
+                const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                handleCameraPhoto(file, 'mediaDevices');
+                closeCamera();
+            }, 'image/jpeg', 0.8);
+        };
+        
+        // Fermer la caméra
+        closeButton.onclick = closeCamera;
+        
+        function closeCamera() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            document.body.removeChild(video);
+            document.body.removeChild(captureButton);
+            document.body.removeChild(closeButton);
+        }
     }
     
     // Détecter si l'appareil a une caméra et ajuster l'interface
@@ -718,24 +835,64 @@
         const cameraButton = document.getElementById('cameraButton');
         const cameraInfo = document.getElementById('cameraInfo');
         
-        if (isMobile && hasMediaDevices) {
-            // Sur mobile avec support caméra : rendre le bouton plus visible
-            if (cameraButton) {
-                cameraButton.classList.remove('btn-outline-success');
-                cameraButton.classList.add('btn-success');
-                cameraButton.innerHTML = '<i class="fas fa-camera"></i> 📷 Prendre une photo';
-            }
-            if (cameraInfo) {
-                cameraInfo.style.display = 'block';
-            }
-            console.log('✅ Support caméra détecté - Fonctionnalité activée');
+        console.log('🔍 Vérification support caméra:', { isMobile, hasMediaDevices });
+        
+        if (hasMediaDevices) {
+            // Vérifier si l'appareil a une caméra
+            navigator.mediaDevices.enumerateDevices()
+                .then(devices => {
+                    const hasCamera = devices.some(device => device.kind === 'videoinput');
+                    console.log('📹 Appareils vidéo détectés:', devices.filter(d => d.kind === 'videoinput').length);
+                    
+                    if (hasCamera) {
+                        // Support caméra complet
+                        if (cameraButton) {
+                            cameraButton.classList.remove('btn-outline-success');
+                            cameraButton.classList.add('btn-success');
+                            cameraButton.innerHTML = '<i class="fas fa-camera"></i> 📷 Prendre une photo';
+                            cameraButton.onclick = openCamera;
+                        }
+                        if (cameraInfo) {
+                            cameraInfo.style.display = 'block';
+                            cameraInfo.innerHTML = '<small class="text-success"><i class="fas fa-check-circle"></i> Caméra disponible - Cliquez pour prendre une photo</small>';
+                        }
+                        // Afficher l'aide pour la première fois
+                        const cameraHelp = document.getElementById('cameraHelp');
+                        if (cameraHelp && !localStorage.getItem('cameraHelpShown')) {
+                            cameraHelp.style.display = 'block';
+                            localStorage.setItem('cameraHelpShown', 'true');
+                        }
+                        console.log('✅ Support caméra complet détecté');
+                    } else {
+                        // Pas de caméra détectée
+                        if (cameraButton) {
+                            cameraButton.classList.add('btn-outline-warning');
+                            cameraButton.classList.remove('btn-outline-success');
+                            cameraButton.innerHTML = '<i class="fas fa-camera"></i> Pas de caméra';
+                            cameraButton.title = 'Aucune caméra détectée';
+                            cameraButton.disabled = true;
+                        }
+                        console.log('❌ Aucune caméra détectée');
+                    }
+                })
+                .catch(err => {
+                    console.error('❌ Erreur lors de la détection des appareils:', err);
+                    // Fallback vers le comportement de base
+                    if (cameraButton) {
+                        cameraButton.innerHTML = '<i class="fas fa-camera"></i> Appareil photo';
+                        cameraButton.title = 'Utilise l\'appareil photo de votre appareil';
+                    }
+                });
         } else {
-            // Sur desktop ou sans support : garder visible mais avec style différent
+            // Pas de support MediaDevices
             if (cameraButton) {
-                cameraButton.innerHTML = '<i class="fas fa-camera"></i> Appareil photo';
-                cameraButton.title = 'Utilise l\'appareil photo de votre appareil';
+                cameraButton.classList.add('btn-outline-secondary');
+                cameraButton.classList.remove('btn-outline-success');
+                cameraButton.innerHTML = '<i class="fas fa-camera"></i> Sélectionner fichier';
+                cameraButton.title = 'Sélectionnez un fichier photo';
+                cameraButton.onclick = () => document.getElementById('fichier').click();
             }
-            console.log('ℹ️ Support caméra limité - Bouton disponible');
+            console.log('ℹ️ Pas de support MediaDevices - Fallback vers sélection fichier');
         }
     }
     
