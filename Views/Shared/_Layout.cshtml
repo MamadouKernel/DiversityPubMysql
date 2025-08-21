@@ -178,9 +178,13 @@
                                         @if (User.IsInRole("Admin"))
                                         {
                                             <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item" href="@Url.Action("Index", "Utilisateur")">
-                                                <i class="fas fa-users"></i> Utilisateurs
-                                            </a></li>
+                                                                                    <li><a class="dropdown-item" href="@Url.Action("Index", "Utilisateur")">
+                                            <i class="fas fa-users"></i> Utilisateurs
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="@Url.Action("Index", "Database")">
+                                            <i class="fas fa-database"></i> Administration Base de Données
+                                        </a></li>
                                         }
                                     </ul>
                                 </li>
