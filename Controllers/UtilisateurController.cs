@@ -10,7 +10,7 @@ using System.IO;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "Admin,ChefProjet")]
+    [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
     public class UtilisateurController : Controller
     {
         private readonly DiversityPubDbContext _context;
@@ -68,7 +68,7 @@ namespace DiversityPub.Controllers
         }
 
         // GET: Utilisateur/Create
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> Create()
         {
             ViewBag.Clients = await _context.Clients.ToListAsync();
@@ -78,7 +78,7 @@ namespace DiversityPub.Controllers
         // POST: Utilisateur/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> Create([Bind("Nom,Prenom,Email,MotDePasse,Role")] Utilisateur utilisateur, Guid? clientId)
         {
             if (ModelState.IsValid)
@@ -115,7 +115,7 @@ namespace DiversityPub.Controllers
         }
 
         // GET: Utilisateur/Edit/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -135,7 +135,7 @@ namespace DiversityPub.Controllers
         // POST: Utilisateur/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admi,SuperAdmin")]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Nom,Prenom,Email,Role")] Utilisateur utilisateur, 
             string MotDePasse, string clientRaisonSociale, string clientTelephone, string clientAdresse,
             string agentTelephone, string agentEmail)
@@ -253,7 +253,7 @@ namespace DiversityPub.Controllers
         }
 
         // GET: Utilisateur/Delete/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -273,7 +273,7 @@ namespace DiversityPub.Controllers
         // POST: Utilisateur/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             var utilisateur = await _context.Utilisateurs.FindAsync(id);
@@ -286,14 +286,14 @@ namespace DiversityPub.Controllers
         }
 
         // GET: Utilisateur/Import
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public IActionResult Import()
         {
             return View();
         }
 
         // GET: Utilisateur/DownloadTemplate
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public IActionResult DownloadTemplate()
         {
             try
@@ -398,7 +398,7 @@ namespace DiversityPub.Controllers
         // POST: Utilisateur/Import
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> Import(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -555,7 +555,7 @@ namespace DiversityPub.Controllers
         // POST: Utilisateur/MigrerMotsDePasse
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> MigrerMotsDePasse()
         {
             try
@@ -581,6 +581,9 @@ namespace DiversityPub.Controllers
                             string defaultPassword;
                             switch (utilisateur.Role)
                             {
+                                case Role.SuperAdmin:
+                                    defaultPassword = "SuperAdmin123!";
+                                    break;
                                 case Role.Admin:
                                     defaultPassword = "Admin123!";
                                     break;

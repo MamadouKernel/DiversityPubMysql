@@ -9,7 +9,7 @@ using System.IO;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "Admin,ChefProjet")]
+    [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
     public class ValidationController : Controller
     {
         private readonly DiversityPubDbContext _context;
@@ -261,14 +261,14 @@ namespace DiversityPub.Controllers
         }
 
         // GET: Validation/ImportPreuves - Vue pour importer des preuves
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public IActionResult ImportPreuves()
         {
             return View();
         }
 
         // GET: Validation/DownloadTemplatePreuves - Télécharger le template Excel pour les preuves
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public IActionResult DownloadTemplatePreuves()
         {
             try
@@ -359,7 +359,7 @@ namespace DiversityPub.Controllers
         // POST: Validation/ImportPreuves - Importer des preuves depuis Excel
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> ImportPreuves(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -497,7 +497,7 @@ namespace DiversityPub.Controllers
         }
 
         // GET: Validation/ExportPreuves - Exporter les preuves en Excel
-        [Authorize(Roles = "Admin,ChefProjet")]
+        [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
         public async Task<IActionResult> ExportPreuves()
         {
             try

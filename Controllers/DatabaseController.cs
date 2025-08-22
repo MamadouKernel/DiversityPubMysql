@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DiversityPub.Data;
 using DiversityPub.Models;
+using DiversityPub.Models.enums;
 using Microsoft.AspNetCore.Authorization;
 using System.Diagnostics;
 using System.Text;
@@ -99,21 +100,21 @@ namespace DiversityPub.Controllers
                     // Si mysqldump échoue, créer un backup de structure
                     await CreateStructureBackup(backupFilePath, commentaire);
                 }
-                
-                // Créer un fichier de métadonnées pour la sauvegarde
-                var metadataPath = Path.Combine(backupPath, $"metadata_{timestamp}.json");
-                var metadata = new
-                {
-                    FileName = backupFileName,
-                    CreatedAt = DateTime.Now,
-                    CreatedBy = User.Identity?.Name,
-                    Commentaire = commentaire,
-                    FileSize = new FileInfo(backupFilePath).Length,
+                        
+                        // Créer un fichier de métadonnées pour la sauvegarde
+                        var metadataPath = Path.Combine(backupPath, $"metadata_{timestamp}.json");
+                        var metadata = new
+                        {
+                            FileName = backupFileName,
+                            CreatedAt = DateTime.Now,
+                            CreatedBy = User.Identity?.Name,
+                            Commentaire = commentaire,
+                            FileSize = new FileInfo(backupFilePath).Length,
                     Database = connectionInfo.Database,
                     Type = mysqldumpSuccess ? "Complet" : "Structure"
-                };
+                        };
 
-                await System.IO.File.WriteAllTextAsync(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                        await System.IO.File.WriteAllTextAsync(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
 
                 var message = mysqldumpSuccess 
                     ? $"✅ Sauvegarde complète créée avec succès : {backupFileName}"
@@ -121,7 +122,7 @@ namespace DiversityPub.Controllers
                 
                 TempData["Success"] = message;
 
-                return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
@@ -637,12 +638,8 @@ COMMIT;
                         }
                     }
 
-                    return Json(new { 
-                        success = true, 
-                        message = $"✅ Toutes les tables vidées avec succès ! Total: {totalAffectedRows} lignes supprimées",
-                        totalAffectedRows = totalAffectedRows,
-                        details = results
-                    });
+                    TempData["Success"] = $"✅ Vidage général terminé ! Total: {totalAffectedRows} lignes supprimées";
+                    return RedirectToAction(nameof(Index));
                 }
                 finally
                 {
@@ -652,11 +649,8 @@ COMMIT;
             }
             catch (Exception ex)
             {
-                return Json(new { 
-                    success = false, 
-                    message = $"❌ Erreur lors du vidage général : {ex.Message}",
-                    details = new List<object>()
-                });
+                TempData["Error"] = $"❌ Erreur lors du vidage général : {ex.Message}";
+                return RedirectToAction(nameof(Index));
             }
         }
 
@@ -672,23 +666,88 @@ COMMIT;
                     return Json(new { success = false, message = "❌ Requête SQL requise" });
                 }
 
-                // Vérifier que la requête ne contient pas de commandes dangereuses
-                var dangerousKeywords = new[] { "DROP", "DELETE", "TRUNCATE", "ALTER", "CREATE", "INSERT", "UPDATE" };
-                var upperQuery = sqlQuery.ToUpper();
-                
-                if (dangerousKeywords.Any(keyword => upperQuery.Contains(keyword)))
+                // Vérifier que c'est une requête SELECT
+                if (!sqlQuery.Trim().ToUpper().StartsWith("SELECT"))
                 {
-                    return Json(new { success = false, message = "❌ Requête non autorisée (commandes dangereuses détectées)" });
+                    return Json(new { success = false, message = "❌ Seules les requêtes SELECT sont autorisées" });
                 }
 
                 // Exécuter la requête
                 var result = await _context.Database.SqlQueryRaw<object>(sqlQuery).ToListAsync();
 
-                return Json(new { success = true, message = $"✅ Requête exécutée avec succès ({result.Count} résultats)", data = result });
+                return Json(new { success = true, data = result });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"❌ Erreur lors de l'exécution de la requête : {ex.Message}" });
+                return Json(new { success = false, message = $"❌ Erreur lors de l'exécution : {ex.Message}" });
+            }
+        }
+
+        // POST: Database/CreateUser - Créer un nouvel utilisateur
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateUser(string nom, string prenom, string email, string motDePasse, int role)
+        {
+            try
+            {
+                // Vérifier que l'email n'existe pas déjà
+                var existingUser = await _context.Utilisateurs.FirstOrDefaultAsync(u => u.Email == email);
+                if (existingUser != null)
+                {
+                    TempData["Error"] = "❌ Un utilisateur avec cet email existe déjà";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Créer le nouvel utilisateur
+                var newUser = new Utilisateur
+                {
+                    Id = Guid.NewGuid(),
+                    Nom = nom,
+                    Prenom = prenom,
+                    Email = email,
+                    MotDePasse = BCrypt.Net.BCrypt.HashPassword(motDePasse),
+                    Role = (Role)role,
+                    Supprimer = 0
+                };
+
+                _context.Utilisateurs.Add(newUser);
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = $"✅ Utilisateur {nom} {prenom} créé avec succès";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"❌ Erreur lors de la création de l'utilisateur : {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // GET: Database/GetUsers - Récupérer la liste des utilisateurs
+        [HttpGet]
+        public async Task<IActionResult> GetUsers()
+        {
+            try
+            {
+                var users = await _context.Utilisateurs
+                    .Select(u => new
+                    {
+                        u.Id,
+                        u.Nom,
+                        u.Prenom,
+                        u.Email,
+                        u.Role,
+                        u.Supprimer
+                    })
+                    .OrderBy(u => u.Nom)
+                    .ThenBy(u => u.Prenom)
+                    .ToListAsync();
+
+                return Json(new { success = true, data = users });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"❌ Erreur : {ex.Message}" });
             }
         }
 

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "Admin,ChefProjet")]
+    [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
     public class LieuController : Controller
     {
         private readonly DiversityPubDbContext _context;

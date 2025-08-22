@@ -10,7 +10,7 @@ using System.Security.Claims;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "AgentTerrain,Admin,ChefProjet")]
+    [Authorize(Roles = "AgentTerrain,Admin,ChefProjet,SuperAdmin")]
     public class AgentTerrainController : Controller
     {
         private readonly DiversityPubDbContext _context;

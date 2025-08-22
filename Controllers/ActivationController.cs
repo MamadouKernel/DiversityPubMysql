@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "Admin,ChefProjet")]
+    [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
     public class ActivationController : Controller
     {
         private readonly DiversityPubDbContext _context;

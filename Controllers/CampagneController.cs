@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "Admin,ChefProjet")]
+    [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
     public class CampagneController : Controller
     {
         private readonly DiversityPubDbContext _context;
@@ -334,7 +334,7 @@ namespace DiversityPub.Controllers
 
         // Action pour valider une campagne (Chef Projet uniquement)
         [HttpPost]
-        [Authorize(Roles = "ChefProjet")]
+        [Authorize(Roles = "ChefProjet,SuperAdmin,Admin")]
         public async Task<IActionResult> ValiderCampagne(Guid id)
         {
             try
@@ -435,7 +435,7 @@ namespace DiversityPub.Controllers
 
         // Action pour forcer la vérification des campagnes expirées (Admin uniquement)
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> ForceCheckExpiredCampagnes()
         {
             try

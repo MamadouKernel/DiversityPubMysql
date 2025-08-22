@@ -200,7 +200,7 @@ namespace DiversityPub.Controllers
 
         // POST: DemandeActivation/Approuver/5
         [HttpPost]
-        [Authorize(Roles = "Admin,ChefProjet")]
+        [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
         public async Task<IActionResult> Approuver(Guid id)
         {
             try
@@ -261,7 +261,7 @@ namespace DiversityPub.Controllers
 
         // POST: DemandeActivation/Refuser/5
         [HttpPost]
-        [Authorize(Roles = "Admin,ChefProjet")]
+        [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
         public async Task<IActionResult> Refuser(Guid id, [FromBody] RefusDemandeModel model)
         {
             try

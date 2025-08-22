@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace DiversityPub.Controllers
 {
-    [Authorize(Roles = "Admin,ChefProjet")]
+    [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
     public class FeedbackController : Controller
     {
         private readonly DiversityPubDbContext _context;

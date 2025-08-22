@@ -59,7 +59,7 @@ namespace DiversityPub.Controllers
         /// API pour géocoder automatiquement tous les agents sans coordonnées
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> GeocodeAllAgents()
         {
             try

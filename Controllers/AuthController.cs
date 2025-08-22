@@ -207,7 +207,7 @@ namespace DiversityPub.Controllers
 
         // GET: Auth/ForceLogout - Méthode pour forcer la déconnexion d'un agent
         [HttpGet]
-        [Authorize(Roles = "Admin,ChefProjet")]
+        [Authorize(Roles = "Admin,ChefProjet,SuperAdmin")]
         public async Task<IActionResult> ForceLogout(Guid agentId)
         {
             try
@@ -257,7 +257,7 @@ namespace DiversityPub.Controllers
 
         // GET: Auth/CheckConnectionStatus - Vérifier le statut de connexion d'un agent
         [HttpGet]
-        [Authorize(Roles = "AgentTerrain,Admin,ChefProjet")]
+        [Authorize(Roles = "AgentTerrain,Admin,ChefProjet,SuperAdmin")]
         public async Task<IActionResult> CheckConnectionStatus()
         {
             try
