@@ -729,7 +729,33 @@ COMMIT;
         {
             try
             {
-                var users = await _context.Utilisateurs
+                // Vérifier le rôle de l'utilisateur connecté
+                var currentUserEmail = User.Identity?.Name;
+                var currentUser = await _context.Utilisateurs
+                    .FirstOrDefaultAsync(u => u.Email == currentUserEmail);
+
+                if (currentUser == null)
+                {
+                    return Json(new { success = false, message = "❌ Utilisateur non trouvé" });
+                }
+
+                // Si c'est un SuperAdmin, il peut voir tous les utilisateurs
+                // Sinon, il ne peut voir que les utilisateurs qui ne sont pas SuperAdmin
+                var usersQuery = _context.Utilisateurs.AsQueryable();
+                
+                Console.WriteLine($"DEBUG GetUsers: Current user role: {currentUser.Role}");
+                
+                if (currentUser.Role != Role.SuperAdmin)
+                {
+                    Console.WriteLine($"DEBUG GetUsers: Filtering out SuperAdmin users");
+                    usersQuery = usersQuery.Where(u => u.Role != Role.SuperAdmin);
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG GetUsers: SuperAdmin - showing all users");
+                }
+
+                var users = await usersQuery
                     .Select(u => new
                     {
                         u.Id,
@@ -737,13 +763,21 @@ COMMIT;
                         u.Prenom,
                         u.Email,
                         u.Role,
-                        u.Supprimer
+                        u.Supprimer,
+                        CanEdit = currentUser.Role == Role.SuperAdmin || u.Role != Role.SuperAdmin,
+                        CanDelete = currentUser.Role == Role.SuperAdmin ? true : u.Role != Role.SuperAdmin
                     })
                     .OrderBy(u => u.Nom)
                     .ThenBy(u => u.Prenom)
                     .ToListAsync();
 
-                return Json(new { success = true, data = users });
+                return Json(new { 
+                    success = true, 
+                    data = users, 
+                    currentUserRole = currentUser.Role,
+                    currentUserEmail = currentUserEmail,
+                    debugInfo = $"Current user: {currentUserEmail}, Role: {currentUser.Role}, Users count: {users.Count}"
+                });
             }
             catch (Exception ex)
             {
@@ -803,6 +837,62 @@ COMMIT;
             {
                 TempData["Error"] = $"❌ Erreur lors de la suppression : {ex.Message}";
             return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // POST: Database/DeleteUser - Supprimer un utilisateur (soft delete)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteUser(string userId)
+        {
+            try
+            {
+                // Vérifier le rôle de l'utilisateur connecté
+                var currentUserEmail = User.Identity?.Name;
+                var currentUser = await _context.Utilisateurs
+                    .FirstOrDefaultAsync(u => u.Email == currentUserEmail);
+
+                if (currentUser == null)
+                {
+                    return Json(new { success = false, message = "❌ Utilisateur non trouvé" });
+                }
+
+                // Trouver l'utilisateur à supprimer
+                var userToDelete = await _context.Utilisateurs
+                    .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
+                if (userToDelete == null)
+                {
+                    return Json(new { success = false, message = "❌ Utilisateur à supprimer non trouvé" });
+                }
+
+                // Vérifier les permissions
+                Console.WriteLine($"DEBUG DeleteUser: Current user role: {currentUser.Role}, User to delete role: {userToDelete.Role}");
+                Console.WriteLine($"DEBUG DeleteUser: Current user email: {currentUser.Email}, User to delete email: {userToDelete.Email}");
+                
+                if (currentUser.Role != Role.SuperAdmin && userToDelete.Role == Role.SuperAdmin)
+                {
+                    Console.WriteLine($"DEBUG DeleteUser: BLOCKED - Non-SuperAdmin trying to delete SuperAdmin");
+                    return Json(new { success = false, message = "❌ Vous ne pouvez pas supprimer un SuperAdmin" });
+                }
+                
+                Console.WriteLine($"DEBUG DeleteUser: ALLOWED - Proceeding with deletion");
+
+                // Empêcher un SuperAdmin de se supprimer lui-même
+                if (currentUser.Id == userToDelete.Id)
+                {
+                    return Json(new { success = false, message = "❌ Vous ne pouvez pas vous supprimer vous-même" });
+                }
+
+                // Soft delete (marquer comme supprimé)
+                userToDelete.Supprimer = 1;
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = $"✅ Utilisateur {userToDelete.Nom} {userToDelete.Prenom} supprimé avec succès" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"❌ Erreur lors de la suppression : {ex.Message}" });
             }
         }
 

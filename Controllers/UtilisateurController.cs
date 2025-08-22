@@ -23,11 +23,23 @@ namespace DiversityPub.Controllers
         // GET: Utilisateur
         public async Task<IActionResult> Index(int page = 1, int pageSize = 6)
         {
+            // Vérifier le rôle de l'utilisateur connecté
+            var currentUserEmail = User.Identity?.Name;
+            var currentUser = await _context.Utilisateurs
+                .FirstOrDefaultAsync(u => u.Email == currentUserEmail);
+
             var query = _context.Utilisateurs
                 .Include(u => u.Client)
                 .Include(u => u.AgentTerrain)
-                .Where(u => u.Supprimer == 0)
-                .OrderByDescending(u => u.Id); // Les plus récents en premier (par ID)
+                .Where(u => u.Supprimer == 0);
+
+            // Si ce n'est pas un SuperAdmin, filtrer les SuperAdmin
+            if (currentUser != null && currentUser.Role != Role.SuperAdmin)
+            {
+                query = query.Where(u => u.Role != Role.SuperAdmin);
+            }
+
+            query = query.OrderByDescending(u => u.Id); // Les plus récents en premier (par ID)
 
             var totalItems = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
@@ -276,12 +288,43 @@ namespace DiversityPub.Controllers
         [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var utilisateur = await _context.Utilisateurs.FindAsync(id);
-            if (utilisateur != null)
+            // Vérifier le rôle de l'utilisateur connecté
+            var currentUserEmail = User.Identity?.Name;
+            var currentUser = await _context.Utilisateurs
+                .FirstOrDefaultAsync(u => u.Email == currentUserEmail);
+
+            if (currentUser == null)
             {
-                utilisateur.Supprimer = 1; // Soft delete
-                await _context.SaveChangesAsync();
+                TempData["Error"] = "❌ Utilisateur non trouvé";
+                return RedirectToAction(nameof(Index));
             }
+
+            var utilisateur = await _context.Utilisateurs.FindAsync(id);
+            if (utilisateur == null)
+            {
+                TempData["Error"] = "❌ Utilisateur à supprimer non trouvé";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Vérifier les permissions
+            if (currentUser.Role != Role.SuperAdmin && utilisateur.Role == Role.SuperAdmin)
+            {
+                TempData["Error"] = "❌ Vous ne pouvez pas supprimer un SuperAdmin";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Empêcher un utilisateur de se supprimer lui-même
+            if (currentUser.Id == utilisateur.Id)
+            {
+                TempData["Error"] = "❌ Vous ne pouvez pas vous supprimer vous-même";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Soft delete
+            utilisateur.Supprimer = 1;
+            await _context.SaveChangesAsync();
+            
+            TempData["Success"] = $"✅ Utilisateur {utilisateur.Nom} {utilisateur.Prenom} supprimé avec succès";
             return RedirectToAction(nameof(Index));
         }
 

@@ -91,7 +91,7 @@
                                     <i class="fas fa-eye text-info"></i> Voir détails
                                 </a>
                             </li>
-                            @if (User.IsInRole("Admin"))
+                            @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
                             {
                                 <li>
                                     <a class="dropdown-item" href="@Url.Action("Edit", "Utilisateur", new { id = utilisateur.Id })">
@@ -99,11 +99,14 @@
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item text-danger" href="@Url.Action("Delete", "Utilisateur", new { id = utilisateur.Id })">
-                                        <i class="fas fa-trash"></i> Supprimer
-                                    </a>
-                                </li>
+                                @if (User.IsInRole("SuperAdmin") || utilisateur.Role != DiversityPub.Models.enums.Role.SuperAdmin)
+                                {
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="@Url.Action("Delete", "Utilisateur", new { id = utilisateur.Id })">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </a>
+                                    </li>
+                                }
                             }
                         </ul>
                     </div>
@@ -115,6 +118,9 @@
                             <div>
                                         @switch (utilisateur.Role)
                                         {
+                                            case DiversityPub.Models.enums.Role.SuperAdmin:
+                                                <span class="badge bg-dark">Super Admin</span>
+                                                break;
                                             case DiversityPub.Models.enums.Role.Admin:
                                                 <span class="badge bg-danger">Admin</span>
                                                 break;
@@ -189,16 +195,19 @@
                                class="btn btn-outline-info" title="Détails">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            @if (User.IsInRole("Admin"))
+                                            @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
                                             {
                                                 <a href="@Url.Action("Edit", "Utilisateur", new { id = utilisateur.Id })" 
                                    class="btn btn-outline-warning" title="Modifier">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <a href="@Url.Action("Delete", "Utilisateur", new { id = utilisateur.Id })" 
-                                   class="btn btn-outline-danger" title="Supprimer">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>
+                                                @if (User.IsInRole("SuperAdmin") || utilisateur.Role != DiversityPub.Models.enums.Role.SuperAdmin)
+                                                {
+                                                    <a href="@Url.Action("Delete", "Utilisateur", new { id = utilisateur.Id })" 
+                                       class="btn btn-outline-danger" title="Supprimer">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                }
                                             }
                                         </div>
                     </div>
